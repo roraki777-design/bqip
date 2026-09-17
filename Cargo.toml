@@ -1,0 +1,25 @@
+[workspace]
+members = ["rust/crates/bqip-contracts", "rust/crates/bqip-capture-format"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.85"
+publish = false
+
+[workspace.dependencies]
+prost = "=0.13.5"
+prost-build = "=0.13.5"
+serde = { version = "=1.0.219", features = ["derive"] }
+serde_json = "=1.0.140"
+sha2 = "=0.10.8"
+uuid = { version = "=1.16.0", features = ["v4"] }
+crc32c = "=0.6.8"
+proptest = "=1.6.0"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = "warn"

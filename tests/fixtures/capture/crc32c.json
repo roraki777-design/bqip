@@ -1,0 +1,12 @@
+[
+  {
+    "name": "empty",
+    "input_hex": "",
+    "crc32c_hex": "00000000"
+  },
+  {
+    "name": "standard_check",
+    "input_hex": "313233343536373839",
+    "crc32c_hex": "e3069283"
+  }
+]

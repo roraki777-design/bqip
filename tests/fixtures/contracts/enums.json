@@ -1,0 +1,251 @@
+{
+  "ReplayMode": [
+    {
+      "token": "UNKNOWN",
+      "wire_name": "REPLAY_MODE_UNKNOWN",
+      "number": 0
+    },
+    {
+      "token": "LIVE",
+      "wire_name": "REPLAY_MODE_LIVE",
+      "number": 1
+    },
+    {
+      "token": "VERSION_PINNED_RESEARCH",
+      "wire_name": "REPLAY_MODE_VERSION_PINNED_RESEARCH",
+      "number": 2
+    },
+    {
+      "token": "AS_LIVED_FORENSIC",
+      "wire_name": "REPLAY_MODE_AS_LIVED_FORENSIC",
+      "number": 3
+    }
+  ],
+  "PayloadKind": [
+    {
+      "token": "UNKNOWN",
+      "wire_name": "PAYLOAD_KIND_UNKNOWN",
+      "number": 0
+    },
+    {
+      "token": "TEXT",
+      "wire_name": "PAYLOAD_KIND_TEXT",
+      "number": 1
+    },
+    {
+      "token": "BINARY",
+      "wire_name": "PAYLOAD_KIND_BINARY",
+      "number": 2
+    }
+  ],
+  "RawSegmentState": [
+    {
+      "token": "UNKNOWN",
+      "wire_name": "RAW_SEGMENT_STATE_UNKNOWN",
+      "number": 0
+    },
+    {
+      "token": "OPEN",
+      "wire_name": "RAW_SEGMENT_STATE_OPEN",
+      "number": 1
+    },
+    {
+      "token": "SEALED_LOCAL",
+      "wire_name": "RAW_SEGMENT_STATE_SEALED_LOCAL",
+      "number": 2
+    },
+    {
+      "token": "UPLOADED",
+      "wire_name": "RAW_SEGMENT_STATE_UPLOADED",
+      "number": 3
+    },
+    {
+      "token": "VERIFIED_REMOTE",
+      "wire_name": "RAW_SEGMENT_STATE_VERIFIED_REMOTE",
+      "number": 4
+    },
+    {
+      "token": "MANIFEST_COMMITTED",
+      "wire_name": "RAW_SEGMENT_STATE_MANIFEST_COMMITTED",
+      "number": 5
+    },
+    {
+      "token": "GC_ELIGIBLE",
+      "wire_name": "RAW_SEGMENT_STATE_GC_ELIGIBLE",
+      "number": 6
+    },
+    {
+      "token": "RECOVERED_PARTIAL",
+      "wire_name": "RAW_SEGMENT_STATE_RECOVERED_PARTIAL",
+      "number": 7
+    },
+    {
+      "token": "FAILED",
+      "wire_name": "RAW_SEGMENT_STATE_FAILED",
+      "number": 8
+    }
+  ],
+  "OperationalKind": [
+    {
+      "token": "UNKNOWN",
+      "wire_name": "OPERATIONAL_KIND_UNKNOWN",
+      "number": 0
+    },
+    {
+      "token": "CONNECTION_OPENED",
+      "wire_name": "OPERATIONAL_KIND_CONNECTION_OPENED",
+      "number": 1
+    },
+    {
+      "token": "CONNECTION_CLOSED",
+      "wire_name": "OPERATIONAL_KIND_CONNECTION_CLOSED",
+      "number": 2
+    },
+    {
+      "token": "VENUE_GAP",
+      "wire_name": "OPERATIONAL_KIND_VENUE_GAP",
+      "number": 3
+    },
+    {
+      "token": "LOCAL_CAPACITY_DROP",
+      "wire_name": "OPERATIONAL_KIND_LOCAL_CAPACITY_DROP",
+      "number": 4
+    },
+    {
+      "token": "PROCESS_CRASH_GAP",
+      "wire_name": "OPERATIONAL_KIND_PROCESS_CRASH_GAP",
+      "number": 5
+    },
+    {
+      "token": "RESYNC_STARTED",
+      "wire_name": "OPERATIONAL_KIND_RESYNC_STARTED",
+      "number": 6
+    },
+    {
+      "token": "SNAPSHOT_SELECTED",
+      "wire_name": "OPERATIONAL_KIND_SNAPSHOT_SELECTED",
+      "number": 7
+    },
+    {
+      "token": "RESYNC_COMPLETED",
+      "wire_name": "OPERATIONAL_KIND_RESYNC_COMPLETED",
+      "number": 8
+    },
+    {
+      "token": "BOOK_HEALTH_CHANGED",
+      "wire_name": "OPERATIONAL_KIND_BOOK_HEALTH_CHANGED",
+      "number": 9
+    },
+    {
+      "token": "CANONICAL_STATE_DIVERGENCE",
+      "wire_name": "OPERATIONAL_KIND_CANONICAL_STATE_DIVERGENCE",
+      "number": 10
+    },
+    {
+      "token": "STORAGE_FAILURE",
+      "wire_name": "OPERATIONAL_KIND_STORAGE_FAILURE",
+      "number": 11
+    },
+    {
+      "token": "UPLOAD_FAILURE",
+      "wire_name": "OPERATIONAL_KIND_UPLOAD_FAILURE",
+      "number": 12
+    }
+  ],
+  "CauseCode": [
+    {
+      "token": "UNKNOWN",
+      "wire_name": "CAUSE_CODE_UNKNOWN",
+      "number": 0
+    },
+    {
+      "token": "VENUE_GAP",
+      "wire_name": "CAUSE_CODE_VENUE_GAP",
+      "number": 1
+    },
+    {
+      "token": "LOCAL_CAPACITY_DROP",
+      "wire_name": "CAUSE_CODE_LOCAL_CAPACITY_DROP",
+      "number": 2
+    },
+    {
+      "token": "PROCESS_CRASH_GAP",
+      "wire_name": "CAUSE_CODE_PROCESS_CRASH_GAP",
+      "number": 3
+    },
+    {
+      "token": "STORAGE_FAILURE",
+      "wire_name": "CAUSE_CODE_STORAGE_FAILURE",
+      "number": 4
+    },
+    {
+      "token": "RAW_WRITE_FAILURE",
+      "wire_name": "CAUSE_CODE_RAW_WRITE_FAILURE",
+      "number": 5
+    },
+    {
+      "token": "UPLOAD_FAILURE",
+      "wire_name": "CAUSE_CODE_UPLOAD_FAILURE",
+      "number": 6
+    },
+    {
+      "token": "PARSE_FAILURE",
+      "wire_name": "CAUSE_CODE_PARSE_FAILURE",
+      "number": 7
+    },
+    {
+      "token": "CHECKSUM_FAILURE",
+      "wire_name": "CAUSE_CODE_CHECKSUM_FAILURE",
+      "number": 8
+    },
+    {
+      "token": "STALE_DATA",
+      "wire_name": "CAUSE_CODE_STALE_DATA",
+      "number": 9
+    },
+    {
+      "token": "CANONICAL_STATE_DIVERGENCE",
+      "wire_name": "CAUSE_CODE_CANONICAL_STATE_DIVERGENCE",
+      "number": 10
+    }
+  ],
+  "RawLossStatus": [
+    {
+      "token": "UNKNOWN",
+      "wire_name": "RAW_LOSS_STATUS_UNKNOWN",
+      "number": 0
+    },
+    {
+      "token": "NONE",
+      "wire_name": "RAW_LOSS_STATUS_NONE",
+      "number": 1
+    },
+    {
+      "token": "POSSIBLE",
+      "wire_name": "RAW_LOSS_STATUS_POSSIBLE",
+      "number": 2
+    },
+    {
+      "token": "CONFIRMED",
+      "wire_name": "RAW_LOSS_STATUS_CONFIRMED",
+      "number": 3
+    }
+  ],
+  "RealtimeContinuity": [
+    {
+      "token": "UNKNOWN",
+      "wire_name": "REALTIME_CONTINUITY_UNKNOWN",
+      "number": 0
+    },
+    {
+      "token": "HEALTHY",
+      "wire_name": "REALTIME_CONTINUITY_HEALTHY",
+      "number": 1
+    },
+    {
+      "token": "BROKEN",
+      "wire_name": "REALTIME_CONTINUITY_BROKEN",
+      "number": 2
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+[
+  {
+    "input": {
+      "b": 2,
+      "a": 1,
+      "manifest_hash": "ignored",
+      "comments": "annotation"
+    },
+    "canonical_utf8": "{\"a\":1,\"b\":2}",
+    "canonical_hex": "7b2261223a312c2262223a327d",
+    "sha256": "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
+  },
+  {
+    "input": {
+      "z": [
+        {
+          "b": false,
+          "a": null
+        },
+        "\n\"\\"
+      ],
+      "😀": 1,
+      "": 2,
+      "epoch_ns": "9223372036854775807"
+    },
+    "canonical_utf8": "{\"epoch_ns\":\"9223372036854775807\",\"z\":[{\"a\":null,\"b\":false},\"\\n\\\"\\\\\"],\"😀\":1,\"\":2}",
+    "canonical_hex": "7b2265706f63685f6e73223a2239323233333732303336383534373735383037222c227a223a5b7b2261223a6e756c6c2c2262223a66616c73657d2c225c6e5c225c5c225d2c22f09f9880223a312c22ee8080223a327d",
+    "sha256": "7d89f3e8ea5fe9cef5aff990d331868b0b6c547a2a123c3f4902ff914334631a"
+  },
+  {
+    "input": {
+      "nested": {
+        "manifest_hash": "retained"
+      },
+      "zero": 0,
+      "negative": -7
+    },
+    "canonical_utf8": "{\"negative\":-7,\"nested\":{\"manifest_hash\":\"retained\"},\"zero\":0}",
+    "canonical_hex": "7b226e65676174697665223a2d372c226e6573746564223a7b226d616e69666573745f68617368223a2272657461696e6564227d2c227a65726f223a307d",
+    "sha256": "4494de92d5f52ba10cb5458791a40b4f69da96120ec58effb27eed9098ba9646"
+  }
+]

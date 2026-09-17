@@ -1,0 +1,11 @@
+syntax = "proto3";
+package bqip.v1;
+
+// Typed envelope only. Dataset/experiment body recipes belong to later briefs.
+// The human-readable file is JSON, not the serialization of this wrapper.
+message ManifestEnvelope {
+  optional uint32 schema_version = 1;
+  optional bytes canonical_body_json = 2;
+  optional bytes manifest_hash = 3;
+  optional string comments = 4;
+}

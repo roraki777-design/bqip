@@ -1,0 +1,49 @@
+name: BQIP contract kernel
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12.14'
+      - name: Required deliverables
+        run: python tools/readiness.py
+      - name: Rust toolchain
+        run: rustup toolchain install 1.85.0 --profile minimal --component rustfmt --component clippy
+      - name: Protobuf compiler 33.6
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 --output /tmp/bqip-protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v33.6/protoc-33.6-linux-x86_64.zip
+          echo '9c49962391ff8b5754342509efc3885db91dfe11a358e1e98c9a71518f0ad199  /tmp/bqip-protoc.zip' | sha256sum --check
+          unzip -q /tmp/bqip-protoc.zip -d /tmp/bqip-protoc
+          echo /tmp/bqip-protoc/bin >> "$GITHUB_PATH"
+      - name: Python locked tools
+        run: python -m pip install --require-hashes -r python/requirements-dev.lock
+      - name: Rust dependency scanner
+        # 0.21.2 cannot parse CVSS 4.0 entries in the current RustSec database.
+        run: cargo install cargo-audit --version 0.22.1 --locked
+      - name: Gitleaks 8.24.2
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 --output /tmp/bqip-gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/v8.24.2/gitleaks_8.24.2_linux_x64.tar.gz
+          echo 'fa0500f6b7e41d28791ebc680f5dd9899cd42b58629218a5f041efa899151a8e  /tmp/bqip-gitleaks.tar.gz' | sha256sum --check
+          mkdir -p /tmp/bqip-gitleaks
+          tar -xzf /tmp/bqip-gitleaks.tar.gz -C /tmp/bqip-gitleaks gitleaks
+          echo /tmp/bqip-gitleaks >> "$GITHUB_PATH"
+      - name: Regenerate official bindings and verify committed output
+        run: |
+          python tools/generate_protobuf.py
+          git diff --exit-code -- python/src/bqip/v1
+      - name: Same gates as local
+        run: python tools/checks.py

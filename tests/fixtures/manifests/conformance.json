@@ -1,0 +1,131 @@
+{
+  "source": "Independently derived from RFC 8785 sections 3.1, 3.2.2.1, 3.2.2.2, 3.2.3 and the AC-001 integer-only/root-exclusion profile. Expected canonical strings were specified literally; SHA-256 is computed over those literal bytes with hashlib, never BQIP.",
+  "valid": [
+    {
+      "name": "utf16_order",
+      "input_json": "{\"\\ue000\":10,\"\\ud83d\\ude00\":9,\"\\ud800\\udc00\":8,\"\\ud7ff\":7,\"\\u20ac\":6,\"\\u00f6\":5,\"\\u0080\":4,\"a\":3,\"1\":2,\"\\r\":1}",
+      "jcs_utf8_hex": "7b225c72223a312c2231223a322c2261223a332c22c280223a342c22c3b6223a352c22e282ac223a362c22ed9fbf223a372c22f0908080223a382c22f09f9880223a392c22ee8080223a31307d",
+      "manifest_utf8_hex": "7b225c72223a312c2231223a322c2261223a332c22c280223a342c22c3b6223a352c22e282ac223a362c22ed9fbf223a372c22f0908080223a382c22f09f9880223a392c22ee8080223a31307d",
+      "manifest_sha256": "33fa1f8bd16b2e1efbe55fd1759c6509b4c12187adb9e0c2b4c2f53059d1cfc7"
+    },
+    {
+      "name": "prefix_order",
+      "input_json": "{\"aa\":3,\"a\":2,\"\":1,\"ab\":4}",
+      "jcs_utf8_hex": "7b22223a312c2261223a322c226161223a332c226162223a347d",
+      "manifest_utf8_hex": "7b22223a312c2261223a322c226161223a332c226162223a347d",
+      "manifest_sha256": "1a46110214a3bc3b4e5d70b7131000feb3e895184a4ac01d33b65cc0edb99e1a"
+    },
+    {
+      "name": "escape_controls",
+      "input_json": "{\"s\":\"\\u0000\\u0008\\u0009\\u000a\\u000c\\u000d\\u000f\\u001f\\u0022\\u005c\\/\\u00e9\\u2028\\u2029\"}",
+      "jcs_utf8_hex": "7b2273223a225c75303030305c625c745c6e5c665c725c75303030665c75303031665c225c5c2fc3a9e280a8e280a9227d",
+      "manifest_utf8_hex": "7b2273223a225c75303030305c625c745c6e5c665c725c75303030665c75303031665c225c5c2fc3a9e280a8e280a9227d",
+      "manifest_sha256": "62f5f59bcf38eac909017e89a385033c5c205db8d7ae612cbf4dbcb9e28f409e"
+    },
+    {
+      "name": "array_objects",
+      "input_json": "{\"v\":[null,true,false,{\"z\":0,\"a\":1},[3,2,1]]}",
+      "jcs_utf8_hex": "7b2276223a5b6e756c6c2c747275652c66616c73652c7b2261223a312c227a223a307d2c5b332c322c315d5d7d",
+      "manifest_utf8_hex": "7b2276223a5b6e756c6c2c747275652c66616c73652c7b2261223a312c227a223a307d2c5b332c322c315d5d7d",
+      "manifest_sha256": "a9d338c70204b20d115954c7c498394d964a8ae3b780235e2c961be7f59184e7"
+    },
+    {
+      "name": "safe_integer_endpoints",
+      "input_json": "{\"z\":-0,\"p\":9007199254740991,\"n\":-9007199254740991}",
+      "jcs_utf8_hex": "7b226e223a2d393030373139393235343734303939312c2270223a393030373139393235343734303939312c227a223a307d",
+      "manifest_utf8_hex": "7b226e223a2d393030373139393235343734303939312c2270223a393030373139393235343734303939312c227a223a307d",
+      "manifest_sha256": "7896c9d28d3df71d7c4f8d8484a845d0c0281d57e09cda95b33910eb7de6d679"
+    },
+    {
+      "name": "no_unicode_normalization",
+      "input_json": "{\"b\":\"e\\u0301\",\"a\":\"\\u00e9\"}",
+      "jcs_utf8_hex": "7b2261223a22c3a9222c2262223a2265cc81227d",
+      "manifest_utf8_hex": "7b2261223a22c3a9222c2262223a2265cc81227d",
+      "manifest_sha256": "f22b36490919217767bfdcc1a929138cfabb6d6f40539ea9165723e1a8cabcee"
+    },
+    {
+      "name": "escaped_property_sort",
+      "input_json": "{\"\\n\":3,\"A\":4,\"\\u0000\":1,\"\\b\":2}",
+      "jcs_utf8_hex": "7b225c7530303030223a312c225c62223a322c225c6e223a332c2241223a347d",
+      "manifest_utf8_hex": "7b225c7530303030223a312c225c62223a322c225c6e223a332c2241223a347d",
+      "manifest_sha256": "317aed113035d62ef4d681756c4893a6da7545d5be7950cb59d51ce705777e26"
+    },
+    {
+      "name": "root_only_exclusions",
+      "input_json": "{\"v\":1,\"manifest_hash\":\"old\",\"comments\":\"note\",\"nested\":{\"manifest_hash\":\"kept\",\"comments\":\"kept\"}}",
+      "jcs_utf8_hex": "7b22636f6d6d656e7473223a226e6f7465222c226d616e69666573745f68617368223a226f6c64222c226e6573746564223a7b22636f6d6d656e7473223a226b657074222c226d616e69666573745f68617368223a226b657074227d2c2276223a317d",
+      "manifest_utf8_hex": "7b226e6573746564223a7b22636f6d6d656e7473223a226b657074222c226d616e69666573745f68617368223a226b657074227d2c2276223a317d",
+      "manifest_sha256": "a2646c1d8e61f5adc2f785f881f0a3cde777d5d096265df142f194cbbe9bc107"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "duplicate_root",
+      "input_json": "{\"x\":1,\"x\":2}"
+    },
+    {
+      "name": "duplicate_nested",
+      "input_json": "{\"x\":{\"a\":1,\"a\":2}}"
+    },
+    {
+      "name": "fraction",
+      "input_json": "{\"x\":1.0}"
+    },
+    {
+      "name": "exponent",
+      "input_json": "{\"x\":1e0}"
+    },
+    {
+      "name": "exponent_negative",
+      "input_json": "{\"x\":1E-1}"
+    },
+    {
+      "name": "leading_plus",
+      "input_json": "{\"x\":+1}"
+    },
+    {
+      "name": "leading_zero",
+      "input_json": "{\"x\":01}"
+    },
+    {
+      "name": "nan",
+      "input_json": "{\"x\":NaN}"
+    },
+    {
+      "name": "infinity",
+      "input_json": "{\"x\":Infinity}"
+    },
+    {
+      "name": "negative_infinity",
+      "input_json": "{\"x\":-Infinity}"
+    },
+    {
+      "name": "unsafe_positive_integer",
+      "input_json": "{\"x\":9007199254740992}"
+    },
+    {
+      "name": "unsafe_negative_integer",
+      "input_json": "{\"x\":-9007199254740992}"
+    },
+    {
+      "name": "high_surrogate",
+      "input_json": "{\"x\":\"\\ud800\"}"
+    },
+    {
+      "name": "low_surrogate",
+      "input_json": "{\"\\udfff\":1}"
+    },
+    {
+      "name": "array_manifest_root",
+      "input_json": "[]"
+    },
+    {
+      "name": "scalar_manifest_root",
+      "input_json": "null"
+    },
+    {
+      "name": "float_annotation",
+      "input_json": "{\"comments\":1.0}"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+# Exact direct tool pins. Install the resolved requirements-dev.lock for builds.
+-r requirements.txt
+ruff==0.11.4
+mypy==1.15.0
+pip-audit==2.9.0
+# Development-only annotations for the official protobuf runtime.
+types-protobuf==6.32.1.20260221

@@ -1,0 +1,65 @@
+[
+  {
+    "name": "empty",
+    "components": [
+      [
+        "x",
+        ""
+      ]
+    ],
+    "preimage_hex": "425149502d49442d5631000000017800000000",
+    "sha256": "ac44dc2c8c08f7947da12168b194b894f8ff2418d1a9ac5056620128e85360d2"
+  },
+  {
+    "name": "unicode",
+    "components": [
+      [
+        "nombre",
+        "636166c3a9"
+      ]
+    ],
+    "preimage_hex": "425149502d49442d5631000000066e6f6d62726500000005636166c3a9",
+    "sha256": "e367846227e8faa708ca7e05f4da6eacf56869b08b21ef06e27c337dbc37ee64"
+  },
+  {
+    "name": "integer",
+    "components": [
+      [
+        "seq",
+        "2d3432"
+      ]
+    ],
+    "preimage_hex": "425149502d49442d563100000003736571000000032d3432",
+    "sha256": "8885df124988fd98d50100ba17615fe78f9954dabcac29ea1102c3ae556b49b7"
+  },
+  {
+    "name": "decimal",
+    "components": [
+      [
+        "price",
+        "31323334353a32"
+      ]
+    ],
+    "preimage_hex": "425149502d49442d56310000000570726963650000000731323334353a32",
+    "sha256": "cffcfbe8bcc0d143e8f52da6211b7bb397cf7a0fa4bc7d48612a7ba1622cb4b7"
+  },
+  {
+    "name": "ordered",
+    "components": [
+      [
+        "event",
+        "54455354"
+      ],
+      [
+        "seq",
+        "37"
+      ],
+      [
+        "n",
+        "303a30"
+      ]
+    ],
+    "preimage_hex": "425149502d49442d5631000000056576656e740000000454455354000000037365710000000137000000016e00000003303a30",
+    "sha256": "6dfd4e7d754111e572ff48f5b09576792ee2b9bac97e42512fedb54b770c24cb"
+  }
+]

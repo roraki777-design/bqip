@@ -1,0 +1,9 @@
+{
+  "header_hex": "4251524300000001000102030405060708090a0b0c0d0e0f",
+  "segment_id": "00010203-0405-0607-0809-0a0b0c0d0e0f",
+  "complete_sha256": "137035d7aee0667471c2c01b853dd13c02f7683022d8f7dbf86e55eeffda38aa",
+  "complete_bytes": 768,
+  "record_count": 5,
+  "truncated_good_records": 4,
+  "truncated_prefix_bytes": 617
+}

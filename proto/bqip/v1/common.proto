@@ -1,0 +1,28 @@
+syntax = "proto3";
+package bqip.v1;
+
+// Scalar presence is explicit. Application validation rejects missing required fields.
+message DecimalValue {
+  optional string coefficient = 1;
+  optional uint32 scale = 2;
+}
+
+message CaptureId {
+  optional bytes collector_instance_id = 1; // Exactly 16 RFC 9562 UUID bytes.
+  optional uint64 capture_seq = 2;
+}
+
+enum ReplayMode {
+  REPLAY_MODE_UNKNOWN = 0;
+  REPLAY_MODE_LIVE = 1;
+  REPLAY_MODE_VERSION_PINNED_RESEARCH = 2;
+  REPLAY_MODE_AS_LIVED_FORENSIC = 3;
+}
+
+message ProcessingContext {
+  optional int64 processing_timestamp_ns = 1;
+  optional string code_commit = 2;
+  optional uint32 schema_version = 3;
+  optional bytes run_id = 4;
+  optional ReplayMode replay_mode = 5;
+}

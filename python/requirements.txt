@@ -1,0 +1,2 @@
+# Official runtime required by protoc-generated Python code. No other runtime dependency.
+protobuf==6.33.6

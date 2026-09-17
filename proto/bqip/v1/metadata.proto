@@ -1,0 +1,20 @@
+syntax = "proto3";
+package bqip.v1;
+import "bqip/v1/common.proto";
+
+message InstrumentMetadataVersion {
+  optional string instrument_id = 1;
+  optional string metadata_version = 2;
+  optional int64 effective_from_ns = 3;
+  optional int64 effective_to_ns = 4;
+  optional int64 known_from_ns = 5;
+  optional int64 known_to_ns = 6;
+  optional string supersedes_version = 7;
+  DecimalValue contract_multiplier = 8;
+  optional string quantity_unit = 9; // Explicit unit token; venue values deferred.
+  DecimalValue tick_size = 10;
+  DecimalValue lot_size = 11;
+  optional string product_type = 12;
+  optional string margin_asset = 13;
+  optional string settlement_asset = 14;
+}

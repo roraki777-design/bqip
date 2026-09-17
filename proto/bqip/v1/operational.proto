@@ -1,0 +1,65 @@
+syntax = "proto3";
+package bqip.v1;
+import "bqip/v1/common.proto";
+
+enum OperationalKind {
+  OPERATIONAL_KIND_UNKNOWN = 0;
+  OPERATIONAL_KIND_CONNECTION_OPENED = 1;
+  OPERATIONAL_KIND_CONNECTION_CLOSED = 2;
+  OPERATIONAL_KIND_VENUE_GAP = 3;
+  OPERATIONAL_KIND_LOCAL_CAPACITY_DROP = 4;
+  OPERATIONAL_KIND_PROCESS_CRASH_GAP = 5;
+  OPERATIONAL_KIND_RESYNC_STARTED = 6;
+  OPERATIONAL_KIND_SNAPSHOT_SELECTED = 7;
+  OPERATIONAL_KIND_RESYNC_COMPLETED = 8;
+  OPERATIONAL_KIND_BOOK_HEALTH_CHANGED = 9;
+  OPERATIONAL_KIND_CANONICAL_STATE_DIVERGENCE = 10;
+  OPERATIONAL_KIND_STORAGE_FAILURE = 11;
+  OPERATIONAL_KIND_UPLOAD_FAILURE = 12;
+}
+
+enum CauseCode {
+  CAUSE_CODE_UNKNOWN = 0;
+  CAUSE_CODE_VENUE_GAP = 1;
+  CAUSE_CODE_LOCAL_CAPACITY_DROP = 2;
+  CAUSE_CODE_PROCESS_CRASH_GAP = 3;
+  CAUSE_CODE_STORAGE_FAILURE = 4;
+  CAUSE_CODE_RAW_WRITE_FAILURE = 5;
+  CAUSE_CODE_UPLOAD_FAILURE = 6;
+  CAUSE_CODE_PARSE_FAILURE = 7;
+  CAUSE_CODE_CHECKSUM_FAILURE = 8;
+  CAUSE_CODE_STALE_DATA = 9;
+  CAUSE_CODE_CANONICAL_STATE_DIVERGENCE = 10;
+}
+
+enum RawLossStatus {
+  RAW_LOSS_STATUS_UNKNOWN = 0;
+  RAW_LOSS_STATUS_NONE = 1;
+  RAW_LOSS_STATUS_POSSIBLE = 2;
+  RAW_LOSS_STATUS_CONFIRMED = 3;
+}
+
+enum RealtimeContinuity {
+  REALTIME_CONTINUITY_UNKNOWN = 0;
+  REALTIME_CONTINUITY_HEALTHY = 1;
+  REALTIME_CONTINUITY_BROKEN = 2;
+}
+
+message QualityEvent {
+  optional CauseCode cause = 1;
+  optional RawLossStatus raw_loss_status = 2;
+  optional RealtimeContinuity realtime_continuity = 3;
+  optional int64 timestamp_ns = 4;
+  ProcessingContext context = 5;
+  CaptureId capture_id = 6;
+  optional bytes session_id = 7;
+}
+
+message OperationalEvent {
+  optional OperationalKind kind = 1;
+  optional int64 timestamp_ns = 2;
+  ProcessingContext context = 3;
+  CaptureId capture_id = 4;
+  optional bytes session_id = 5;
+  QualityEvent quality = 6;
+}

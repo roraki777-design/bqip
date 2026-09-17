@@ -1,0 +1,238 @@
+[
+  {
+    "name": "effective_from",
+    "versions": [
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v1",
+        "effective_from_ns": 100,
+        "effective_to_ns": 200,
+        "known_from_ns": 10
+      },
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v2",
+        "effective_from_ns": 200,
+        "known_from_ns": 20
+      }
+    ],
+    "event_time_ns": 100,
+    "mode": "CORRECTED_RESEARCH",
+    "expected": "v1"
+  },
+  {
+    "name": "effective_to",
+    "versions": [
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v1",
+        "effective_from_ns": 100,
+        "effective_to_ns": 200,
+        "known_from_ns": 10
+      },
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v2",
+        "effective_from_ns": 200,
+        "known_from_ns": 20
+      }
+    ],
+    "event_time_ns": 200,
+    "mode": "CORRECTED_RESEARCH",
+    "expected": "v2"
+  },
+  {
+    "name": "open",
+    "versions": [
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v1",
+        "effective_from_ns": 100,
+        "effective_to_ns": 200,
+        "known_from_ns": 10
+      },
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v2",
+        "effective_from_ns": 200,
+        "known_from_ns": 20
+      }
+    ],
+    "event_time_ns": 9223372036854775807,
+    "mode": "CORRECTED_RESEARCH",
+    "expected": "v2"
+  },
+  {
+    "name": "missing",
+    "versions": [
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v1",
+        "effective_from_ns": 100,
+        "effective_to_ns": 200,
+        "known_from_ns": 10
+      },
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v2",
+        "effective_from_ns": 200,
+        "known_from_ns": 20
+      }
+    ],
+    "event_time_ns": 99,
+    "mode": "CORRECTED_RESEARCH",
+    "error": "METADATA_MISSING"
+  },
+  {
+    "name": "overlap",
+    "versions": [
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "a",
+        "effective_from_ns": 100,
+        "known_from_ns": 10
+      },
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "b",
+        "effective_from_ns": 100,
+        "known_from_ns": 20
+      }
+    ],
+    "event_time_ns": 150,
+    "mode": "CORRECTED_RESEARCH",
+    "error": "METADATA_AMBIGUOUS"
+  },
+  {
+    "name": "corrected",
+    "versions": [
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v1",
+        "effective_from_ns": 100,
+        "known_from_ns": 10
+      },
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v2",
+        "effective_from_ns": 100,
+        "known_from_ns": 50,
+        "supersedes_version": "v1"
+      }
+    ],
+    "event_time_ns": 150,
+    "mode": "CORRECTED_RESEARCH",
+    "expected": "v2"
+  },
+  {
+    "name": "as_lived_earlier",
+    "versions": [
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v1",
+        "effective_from_ns": 100,
+        "known_from_ns": 10
+      },
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v2",
+        "effective_from_ns": 100,
+        "known_from_ns": 50,
+        "supersedes_version": "v1"
+      }
+    ],
+    "event_time_ns": 150,
+    "as_of_ns": 49,
+    "mode": "AS_LIVED",
+    "expected": "v1"
+  },
+  {
+    "name": "as_lived_correction_boundary",
+    "versions": [
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v1",
+        "effective_from_ns": 100,
+        "known_from_ns": 10
+      },
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "v2",
+        "effective_from_ns": 100,
+        "known_from_ns": 50,
+        "supersedes_version": "v1"
+      }
+    ],
+    "event_time_ns": 150,
+    "as_of_ns": 50,
+    "mode": "AS_LIVED",
+    "expected": "v2"
+  },
+  {
+    "name": "known_to_exclusive",
+    "versions": [
+      {
+        "instrument_id": "TEST-INSTRUMENT",
+        "product_type": "TEST_PRODUCT",
+        "margin_asset": "TEST_ASSET",
+        "settlement_asset": "TEST_ASSET",
+        "metadata_version": "a",
+        "effective_from_ns": 100,
+        "known_from_ns": 10,
+        "known_to_ns": 20
+      }
+    ],
+    "event_time_ns": 150,
+    "as_of_ns": 20,
+    "mode": "AS_LIVED",
+    "error": "METADATA_MISSING"
+  }
+]

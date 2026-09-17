@@ -1,0 +1,39 @@
+syntax = "proto3";
+package bqip.v1;
+import "bqip/v1/common.proto";
+
+enum PayloadKind {
+  PAYLOAD_KIND_UNKNOWN = 0;
+  PAYLOAD_KIND_TEXT = 1;
+  PAYLOAD_KIND_BINARY = 2;
+}
+
+enum RawSegmentState {
+  RAW_SEGMENT_STATE_UNKNOWN = 0;
+  RAW_SEGMENT_STATE_OPEN = 1;
+  RAW_SEGMENT_STATE_SEALED_LOCAL = 2;
+  RAW_SEGMENT_STATE_UPLOADED = 3;
+  RAW_SEGMENT_STATE_VERIFIED_REMOTE = 4;
+  RAW_SEGMENT_STATE_MANIFEST_COMMITTED = 5;
+  RAW_SEGMENT_STATE_GC_ELIGIBLE = 6;
+  RAW_SEGMENT_STATE_RECOVERED_PARTIAL = 7;
+  RAW_SEGMENT_STATE_FAILED = 8;
+}
+
+message RawCaptureEvent {
+  CaptureId capture_id = 1;
+  optional bytes connection_id = 2;
+  optional bytes session_id = 3;
+  optional string transport = 4;
+  optional string source = 5;
+  optional string endpoint = 6;
+  optional string channel = 7;
+  optional int64 receive_timestamp_ns = 8;
+  optional uint64 monotonic_ns_since_collector_start = 9;
+  optional PayloadKind payload_kind = 10;
+  optional uint32 payload_length = 11;
+  optional bytes raw_content_hash = 12;
+  optional int64 exchange_timestamp_ns = 13;
+  optional bytes venue_event_id = 14;
+  ProcessingContext processing_context = 15;
+}
