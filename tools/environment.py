@@ -28,7 +28,7 @@ def main() -> None:
         "cargo": command("cargo", "--version"),
         "protoc": command("protoc", "--version"),
         "protobuf_runtime": importlib.metadata.version("protobuf"),
-        "cargo_audit": command("cargo", "audit", "--version"),
+        "cargo_audit": command("cargo-audit", "--version"),
         "gitleaks": command("gitleaks", "version"),
         "ruff": importlib.metadata.version("ruff"),
         "mypy": importlib.metadata.version("mypy"),
