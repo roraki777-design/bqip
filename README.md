@@ -4,13 +4,13 @@
 
 BQIP is a BTC quantitative data/research platform. Foundation supplies exact,
 versioned contracts and reproducible evidence before venue integration or research
-features. This repository implements only Implementation Brief #001 / AC-001
+features. This repository implements only Implementation Brief #001 / AC-001B
 against Master Architecture v1.0 FROZEN. Do not start Brief #002.
 
 ## Contents
 
 * Five normative Protobuf IDLs; official committed Python `.py`/`.pyi` output.
-* Two Rust crates: contract primitives and local BQRC framing/recovery.
+* Two Rust crates: contract primitives and BQRC v2 framing, durable seal and recovery.
 * Independent Python primitives and adapters for the official Protobuf runtime.
 * External golden expectations, JCS conformance, property and fault tests.
 * Resolved Cargo and hash-locked Python dependencies, read-only CI, four proposed ADRs.
@@ -88,6 +88,12 @@ in pyproject.toml; handwritten adapters remain strictly checked.
 No exchange adapter/connection, Binance, Book Service, async runtime, NATS,
 database, Parquet, object-store client, cloud deployment, trading credentials,
 orders or execution. Remote segment states are contract values only.
+
+BQRC v2 replaces the rejected pre-acceptance v1 candidate (AR-002/AR-003).
+Header identity and received length prefixes now have CRC protection. SEALED_LOCAL
+requires actual finalized-file readback and canonical durable seal.json. Explicit
+orphan recovery records RECOVERED origin; tag 9 is RECOVERED_UNVERIFIED. See
+`docs/contracts/BQRC-v2.md` and ADR-001 for the exact protocol and error precedence.
 
 Tests exercise local fsync/rename, reopen, truncation, CRC faults and preservation
 of existing evidence. A structurally valid segment does not prove no complete

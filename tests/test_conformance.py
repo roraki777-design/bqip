@@ -33,7 +33,7 @@ class ConformanceTests(unittest.TestCase):
         for vector in fixture("capture/crc32c.json"):
             self.assertEqual(f"{crc32c(bytes.fromhex(vector['input_hex'])):08x}", vector["crc32c_hex"])
         for vector in fixture("capture/frames.json"):
-            body = bytes.fromhex(vector["metadata_hex"] + vector["payload_hex"])
+            body = bytes.fromhex(vector["frame_hex"])[:-4]
             expected = int.from_bytes(bytes.fromhex(vector["frame_hex"])[-4:], "big")
             self.assertEqual(crc32c(body), expected)
 

@@ -1,6 +1,6 @@
 # Brief #001 — implementation record for Architect review
 
-Completion Directive #001-A is the acceptance authority. Acceptance remains
+Completion Directive #001-A and Architect Patch #001-BR are the acceptance authorities. Acceptance remains
 **BLOCKED** until all local gates, clean-checkout verification and a real CI run
 have passed. The accompanying delivery report/logs bind actual results to a git
 commit and lock hashes; this document describes the implementation and procedure.
@@ -16,8 +16,9 @@ Rust formatting and handwritten Python import lint fixes.
 
 Added external integer-domain JCS conformance vectors (8 valid / 17 invalid),
 standard CRC32C vectors, shared enum expectations, Rust whole-frame-deletion
-integrity testing and a replay-identity property. No persisted IDL, existing
-normative fixture, invariant or application functionality was changed.
+integrity testing and a replay-identity property. Those K1 changes preceded AC-001B. The subsequent Architect patch explicitly
+replaces rejected BQRC v1 with v2 and appends RawSegmentState tag 9; unrelated
+contracts and fixtures retain their K1 semantics.
 
 mypy passes with development-only types-protobuf after the dependency was
 reported and the user instructed continuation. Narrow exceptions apply only to
@@ -29,6 +30,29 @@ cargo-audit 0.21.2 failed to parse CVSS 4.0 in the current RustSec database.
 Version 0.22.1 fixes that demonstrated tooling incompatibility and builds using
 Rust 1.85.0. The compiler and project dependencies remain pinned as specified.
 No advisories are removed, ignored or replaced with a stale database.
+
+## Architect Patch #001-BR / AC-001B
+
+AR-002: header CRC protects all 24 identity/version bytes; record CRC includes
+both received length prefixes. External fixtures permanently reject balanced
+3/5 -> 4/4 corruption, identity bit flips, version corruption and v1 input.
+
+AR-003: seal reads and hashes the finalized file while structurally validating it;
+compares actual SHA/count/length/identity with writer expectations; publishes a
+canonical durable seal.json only after success. verify_segment checks both files.
+Orphans are RECOVERED_UNVERIFIED (additive tag 9); explicit recover_seal publishes
+RECOVERED origin without changing the data. Existing final seals are never replaced.
+
+The local API verify_segment(path, limits) now obtains expected evidence from
+sibling seal.json, replacing the pre-acceptance standalone hash argument. No v1
+compatibility is promised. docs/contracts/BQRC-v2.md is the exact normative layout;
+ADR-001 documents all three reasons v1 was rejected and the absence of production
+v1 data. The independent fixture authoring tool is never run by tests or CI.
+
+No new external dependency/version was added. Already-authorized serde_json moved
+from dev-only to runtime use within bqip-capture-format for local seal JSON; the
+resolved Cargo graph and both locks remain byte-identical to K1. The K1 CI workflow
+is unchanged, including immutable action pins and tool checksums.
 
 ## Dependencies
 
@@ -76,11 +100,11 @@ Fixture provenance is documented in tests/fixtures/README.md.
 | capture/crc32c.json | Empty vector and 123456789 -> e3069283; all frame footers also checked |
 | contracts/enums.json | Symbolic and wire names/tags for seven shared enums |
 
-Rust has 20 tests: 1 contract unit, 10 contract integration and 9 capture
-integration tests. Six are proptest properties: decimal idempotence; stable and
+Rust has 37 tests: 1 contract unit, 10 contract integration, 9 capture
+integration and 17 new v2 regression tests. Six are proptest properties: decimal idempotence; stable and
 order-sensitive identity; excluded manifest hash; unambiguous metadata resolution;
 frame round-trip; replay identity across arbitrary collector/sequence/provenance.
-Python has 40 core/conformance tests and 11 generated-Protobuf contract tests.
+Python has 58 core/conformance/v2 tests and 11 generated-Protobuf contract tests.
 Tests include invalid UTF-8, invalid JSON, empty payloads and absent-vs-zero fields.
 
 The JCS domain is precisely documented in docs/contracts/JCS-profile.md. It
@@ -104,7 +128,7 @@ All four ADRs remain **PROPOSED / IMPLEMENTED FOR REVIEW**.
 
 | ADR | Code behavior | Difference |
 |---|---|---|
-| 001 | Application-message bytes, BQRC v1, local seal/recovery and external segment hash | None identified |
+| 001 | Application-message bytes, BQRC v2, durable actual-file seal evidence and explicit recovery | None identified |
 | 002 | Protobuf presence, exact decimals, structured IDs, BQIP-ID-V1 and restricted JCS | None identified |
 | 003 | Immutable half-open bitemporal catalog with explicit supersession | None identified |
 | 008 | Raw semantic equality excludes processing provenance; shared operational contracts | None identified |

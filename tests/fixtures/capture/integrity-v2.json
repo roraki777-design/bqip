@@ -1,0 +1,86 @@
+{
+  "segment_id": "00010203-0405-0607-0809-0a0b0c0d0e0f",
+  "header_hex": "4251524300000002000102030405060708090a0b0c0d0e0f98447ece",
+  "header_crc32c_hex": "98447ece",
+  "record_hex": "00000003000000054142434445464748781b92be",
+  "record_crc32c_hex": "781b92be",
+  "metadata_hex": "414243",
+  "payload_hex": "4445464748",
+  "alternative_record_hex": "00000003000000054142435a5a5a5a5a7ca8685a",
+  "header_errors": [
+    {
+      "name": "segment_id_bit_flip",
+      "hex": "4251524300000002010102030405060708090a0b0c0d0e0f98447ece",
+      "error": "HEADER_CRC_MISMATCH",
+      "offset": 24
+    },
+    {
+      "name": "version_bit_flip",
+      "hex": "4251524300000003000102030405060708090a0b0c0d0e0f98447ece",
+      "error": "UNSUPPORTED_VERSION",
+      "offset": 4
+    },
+    {
+      "name": "header_crc_bit_flip",
+      "hex": "4251524300000002000102030405060708090a0b0c0d0e0f98447ecf",
+      "error": "HEADER_CRC_MISMATCH",
+      "offset": 24
+    },
+    {
+      "name": "bad_magic",
+      "hex": "4641494c00000002000102030405060708090a0b0c0d0e0f98447ece",
+      "error": "BAD_MAGIC",
+      "offset": 0
+    },
+    {
+      "name": "unsupported_valid_version",
+      "hex": "4251524300000003000102030405060708090a0b0c0d0e0fc7a0a291",
+      "error": "UNSUPPORTED_VERSION",
+      "offset": 4
+    },
+    {
+      "name": "truncated_header",
+      "hex": "4251524300000002000102030405060708090a0b0c0d0e0f98447e",
+      "error": "TRUNCATED_HEADER",
+      "offset": 0
+    },
+    {
+      "name": "rejected_v1_header",
+      "hex": "4251524300000001000102030405060708090a0b0c0d0e0f00000003",
+      "error": "UNSUPPORTED_VERSION",
+      "offset": 4
+    }
+  ],
+  "record_errors": [
+    {
+      "name": "balanced_length_partition",
+      "hex": "00000004000000044142434445464748781b92be",
+      "error": "CRC_MISMATCH",
+      "offset": 0
+    },
+    {
+      "name": "metadata_corruption",
+      "hex": "00000003000000054042434445464748781b92be",
+      "error": "CRC_MISMATCH",
+      "offset": 0
+    },
+    {
+      "name": "payload_corruption",
+      "hex": "00000003000000054142434545464748781b92be",
+      "error": "CRC_MISMATCH",
+      "offset": 0
+    },
+    {
+      "name": "record_crc_corruption",
+      "hex": "00000003000000054142434445464748781b92bf",
+      "error": "CRC_MISMATCH",
+      "offset": 0
+    },
+    {
+      "name": "truncated_final_frame",
+      "hex": "00000003000000054142434445464748781b92",
+      "error": "TRUNCATED_RECORD",
+      "offset": 0
+    }
+  ]
+}

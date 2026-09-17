@@ -297,11 +297,13 @@ class CaptureTests(unittest.TestCase):
             path = Path(temporary) / "capture.sealed"
             original = (FIXTURES / "capture/complete.bqrc").read_bytes()
             path.write_bytes(original)
-            self.assertEqual(verify_segment(path, expected["complete_sha256"]).record_count, 5)
+            seal = fixture("capture/seals-v2.json")["seals"][0]
+            (path.parent / "seal.json").write_bytes(bytes.fromhex(seal["canonical_hex"]))
+            self.assertEqual(verify_segment(path).record_count, 5)
             path.write_bytes(original[:expected["truncated_prefix_bytes"]])
-            self.assertIsNone(recover(path).failure)
-            with self.assertRaisesRegex(CaptureFormatError, "SEGMENT_HASH_MISMATCH"):
-                verify_segment(path, expected["complete_sha256"])
+            self.assertEqual(len(list(iter_frames(path))), 4)
+            with self.assertRaisesRegex(CaptureFormatError, "SEAL_BYTE_LENGTH_MISMATCH"):
+                verify_segment(path)
 
     def test_rename_failure_keeps_partial_evidence(self):
         with tempfile.TemporaryDirectory() as temporary:

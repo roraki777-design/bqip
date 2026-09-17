@@ -24,6 +24,7 @@ class RawSegmentState(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     RAW_SEGMENT_STATE_GC_ELIGIBLE: _ClassVar[RawSegmentState]
     RAW_SEGMENT_STATE_RECOVERED_PARTIAL: _ClassVar[RawSegmentState]
     RAW_SEGMENT_STATE_FAILED: _ClassVar[RawSegmentState]
+    RAW_SEGMENT_STATE_RECOVERED_UNVERIFIED: _ClassVar[RawSegmentState]
 PAYLOAD_KIND_UNKNOWN: PayloadKind
 PAYLOAD_KIND_TEXT: PayloadKind
 PAYLOAD_KIND_BINARY: PayloadKind
@@ -36,6 +37,7 @@ RAW_SEGMENT_STATE_MANIFEST_COMMITTED: RawSegmentState
 RAW_SEGMENT_STATE_GC_ELIGIBLE: RawSegmentState
 RAW_SEGMENT_STATE_RECOVERED_PARTIAL: RawSegmentState
 RAW_SEGMENT_STATE_FAILED: RawSegmentState
+RAW_SEGMENT_STATE_RECOVERED_UNVERIFIED: RawSegmentState
 
 class RawCaptureEvent(_message.Message):
     __slots__ = ("capture_id", "connection_id", "session_id", "transport", "source", "endpoint", "channel", "receive_timestamp_ns", "monotonic_ns_since_collector_start", "payload_kind", "payload_length", "raw_content_hash", "exchange_timestamp_ns", "venue_event_id", "processing_context")

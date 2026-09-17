@@ -30,3 +30,22 @@ Additional completion-directive fixtures:
   shared enum, checked against generated contracts and Python domain enums.
 * capture/crc32c.json: empty input and the standard 123456789 Castagnoli vector;
   both implementations also check every golden frame's independent CRC footer.
+
+## AC-001B replacement of rejected v1 fixtures
+
+capture/frames.json retains its original metadata/payload bytes and raw hashes;
+record CRCs now include the received eight prefix bytes. Segments have the v2
+28-byte CRC-protected header. V1 has no production compatibility; integrity-v2.json
+includes a rejected version-1 header as a negative fixture.
+
+integrity-v2.json fixes exact header/record/CRC bytes, the 3/5 -> 4/4 attack, header
+identity/version/CRC corruption and existing corruption cases. seals-v2.json fixes
+ORIGINAL and RECOVERED JCS bytes/hashes/counts/lengths plus orphan/verified states.
+Both suites independently read these expectations. Enum fixtures append tag 9;
+existing tags retain their expected values.
+
+tools/author_bqrc_v2_fixtures.py records the independent authoring calculation:
+forward-polynomial CRC with bit reversal, literal field strings and ASCII key
+sorting for these string-only seal bodies. It imports no BQIP module and does not
+use output from Rust or Python under test. It is never invoked by the test runner
+or CI. Fixture updates require Architect authority; tests never bless new output.

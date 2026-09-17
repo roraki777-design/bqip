@@ -111,7 +111,7 @@ fn local_seal_reopen_and_recovery_preserve_source() {
         raw_hash(&std::fs::read(&sealed.path).unwrap())
     );
     assert_eq!(
-        verify_segment(&sealed.path, sealed.sha256, Limits::default())
+        verify_segment(&sealed.path, Limits::default())
             .unwrap()
             .record_count,
         1
@@ -179,7 +179,7 @@ fn crc32c_standard_and_every_golden_record() {
     for vector in vectors() {
         let frame = unhex(vector["frame_hex"].as_str().unwrap());
         let expected = u32::from_be_bytes(frame[frame.len() - 4..].try_into().unwrap());
-        assert_eq!(crc32c::crc32c(&frame[8..frame.len() - 4]), expected);
+        assert_eq!(crc32c::crc32c(&frame[..frame.len() - 4]), expected);
     }
 }
 
@@ -195,19 +195,40 @@ fn external_segment_hash_detects_whole_frame_deletion() {
         .try_into()
         .unwrap();
     std::fs::write(&path, &bytes).unwrap();
+    let seals: Value =
+        serde_json::from_str(&std::fs::read_to_string(root().join("seals-v2.json")).unwrap())
+            .unwrap();
+    std::fs::write(
+        path.with_file_name("seal.json"),
+        unhex(seals["seals"][0]["canonical_hex"].as_str().unwrap()),
+    )
+    .unwrap();
     assert_eq!(
-        verify_segment(&path, hash, Limits::default())
+        verify_segment(&path, Limits::default()).unwrap().sha256,
+        hash
+    );
+    assert_eq!(
+        verify_segment(&path, Limits::default())
             .unwrap()
             .record_count,
         5
     );
     let boundary = expected["truncated_prefix_bytes"].as_u64().unwrap() as usize;
     std::fs::write(&path, &bytes[..boundary]).unwrap();
-    assert!(recover(&path, Limits::default()).unwrap().failure.is_none());
+    let mut cursor = Cursor::new(&bytes[..boundary]);
+    read_header(&mut cursor).unwrap();
+    let mut count = 0;
+    while read_frame(&mut cursor, HEADER_SIZE, Limits::default())
+        .unwrap()
+        .is_some()
+    {
+        count += 1;
+    }
+    assert_eq!(count, 4);
     assert!(matches!(
-        verify_segment(&path, hash, Limits::default()),
+        verify_segment(&path, Limits::default()),
         Err(Error::Format {
-            code: "SEGMENT_HASH_MISMATCH",
+            code: "SEAL_BYTE_LENGTH_MISMATCH",
             ..
         })
     ));

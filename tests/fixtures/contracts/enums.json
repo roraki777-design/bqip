@@ -83,6 +83,11 @@
       "token": "FAILED",
       "wire_name": "RAW_SEGMENT_STATE_FAILED",
       "number": 8
+    },
+    {
+      "token": "RECOVERED_UNVERIFIED",
+      "number": 9,
+      "wire_name": "RAW_SEGMENT_STATE_RECOVERED_UNVERIFIED"
     }
   ],
   "OperationalKind": [

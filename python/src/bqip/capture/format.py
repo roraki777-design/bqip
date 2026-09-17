@@ -1,4 +1,4 @@
-"""Bounded, synchronous BQRC v1 reader/writer and non-destructive recovery.
+"""Bounded, synchronous BQRC v2 reader/writer and non-destructive recovery.
 
 Storage is single-owner: a writer exclusively creates one UUID-named directory.
 Recovery never truncates, edits, or deletes the source evidence.
@@ -12,14 +12,15 @@ import struct
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import BinaryIO
+from typing import BinaryIO, Literal, Protocol
 from uuid import UUID, uuid4
 
-from bqip.contracts.values import U32_MAX, ContractError, RawSegmentState, bounded_int
+from bqip.contracts.values import U32_MAX, U64_MAX, ContractError, RawSegmentState, bounded_int
+from bqip.manifests import JsonValue, canonical_bytes, parse_manifest
 
 MAGIC = b"BQRC"
-VERSION = 1
-HEADER = struct.Struct(">4sI16s")
+VERSION = 2
+HEADER = struct.Struct(">4sI16sI")
 LENGTHS = struct.Struct(">II")
 CRC = struct.Struct(">I")
 
@@ -63,11 +64,34 @@ class Frame:
     def encode(self, limits: Limits = Limits()) -> bytes:
         if len(self.metadata) > limits.metadata_bytes or len(self.payload) > limits.payload_bytes:
             raise CaptureFormatError("FRAME_LIMIT_EXCEEDED", 0)
-        body = self.metadata + self.payload
-        return LENGTHS.pack(len(self.metadata), len(self.payload)) + body + CRC.pack(crc32c(body))
+        data = LENGTHS.pack(len(self.metadata), len(self.payload)) + self.metadata + self.payload
+        return data + CRC.pack(crc32c(data))
 
 
-def _exact(source: BinaryIO, length: int, offset: int) -> bytes:
+class Readable(Protocol):
+    def read(self, size: int = -1, /) -> bytes: ...
+
+
+class _HashingReader:
+    """Hash exactly the bytes consumed by structural validation, in the same pass."""
+    def __init__(self, source: BinaryIO) -> None:
+        self.source = source
+        self.digest = hashlib.sha256()
+        self.byte_length = 0
+
+    def read(self, size: int = -1, /) -> bytes:
+        data = self.source.read(size)
+        self.digest.update(data)
+        self.byte_length += len(data)
+        return data
+
+
+def header(segment_id: UUID) -> bytes:
+    prefix = struct.pack(">4sI16s", MAGIC, VERSION, segment_id.bytes)
+    return prefix + CRC.pack(crc32c(prefix))
+
+
+def _exact(source: Readable, length: int, offset: int) -> bytes:
     chunks = bytearray()
     while len(chunks) < length:
         part = source.read(length - len(chunks))
@@ -77,20 +101,22 @@ def _exact(source: BinaryIO, length: int, offset: int) -> bytes:
     return bytes(chunks)
 
 
-def read_header(source: BinaryIO) -> UUID:
+def read_header(source: Readable) -> UUID:
     try:
         data = _exact(source, HEADER.size, 0)
     except CaptureFormatError as error:
         raise CaptureFormatError("TRUNCATED_HEADER", 0) from error
-    magic, version, identity = HEADER.unpack(data)
+    magic, version, identity, expected_crc = HEADER.unpack(data)
     if magic != MAGIC:
         raise CaptureFormatError("BAD_MAGIC", 0)
     if version != VERSION:
         raise CaptureFormatError("UNSUPPORTED_VERSION", 4)
+    if crc32c(data[:24]) != expected_crc:
+        raise CaptureFormatError("HEADER_CRC_MISMATCH", 24)
     return UUID(bytes=identity)
 
 
-def read_frame(source: BinaryIO, offset: int, limits: Limits = Limits()) -> Frame | None:
+def read_frame(source: Readable, offset: int, limits: Limits = Limits()) -> Frame | None:
     first = source.read(1)
     if not first:
         return None
@@ -100,7 +126,7 @@ def read_frame(source: BinaryIO, offset: int, limits: Limits = Limits()) -> Fram
         raise CaptureFormatError("FRAME_LIMIT_EXCEEDED", offset)
     body = _exact(source, metadata_length + payload_length, offset)
     expected = CRC.unpack(_exact(source, CRC.size, offset))[0]
-    if crc32c(body) != expected:
+    if crc32c(prefix + body) != expected:
         raise CaptureFormatError("CRC_MISMATCH", offset)
     return Frame(body[:metadata_length], body[metadata_length:])
 
@@ -124,25 +150,43 @@ class RecoveryReport:
     failure_offset: int | None
 
 
-def recover(path: Path, limits: Limits = Limits()) -> RecoveryReport:
-    """Read-only scan. A valid prefix is not a claim of full source completeness."""
-    with path.open("rb") as source:
+def _scan(path: Path, limits: Limits) -> tuple[RecoveryReport, str, int]:
+    with path.open("rb") as raw:
+        source = _HashingReader(raw)
         identity = read_header(source)
-        offset = HEADER.size
-        count = 0
+        offset, count = HEADER.size, 0
+        failure = None
+        failed_at = None
         while True:
             try:
                 frame = read_frame(source, offset, limits)
             except CaptureFormatError as error:
-                state = (RawSegmentState.RECOVERED_PARTIAL if error.code == "TRUNCATED_RECORD"
-                         else RawSegmentState.FAILED)
-                return RecoveryReport(identity, state, count, offset, error.code, error.offset)
+                failure, failed_at = error.code, error.offset
+                break
             if frame is None:
-                state = (RawSegmentState.SEALED_LOCAL if path.suffix == ".sealed"
-                         else RawSegmentState.RECOVERED_PARTIAL)
-                return RecoveryReport(identity, state, count, offset, None, None)
+                break
             count += 1
             offset += LENGTHS.size + len(frame.metadata) + len(frame.payload) + CRC.size
+        # Complete the disk hash even if structural verification failed.
+        while source.read(1 << 20):
+            pass
+        state = (RawSegmentState.FAILED if failure and failure != "TRUNCATED_RECORD"
+                 else RawSegmentState.RECOVERED_PARTIAL)
+        report = RecoveryReport(identity, state, count, offset, failure, failed_at)
+        return report, source.digest.hexdigest(), source.byte_length
+
+
+def recover(path: Path, limits: Limits = Limits()) -> RecoveryReport:
+    """Read-only inspection; parsing a sealed filename never establishes a seal."""
+    report, _, _ = _scan(path, limits)
+    if report.failure is not None or path.name != "capture.sealed":
+        return report
+    state = RawSegmentState.RECOVERED_UNVERIFIED
+    if (path.parent / "seal.json").exists():
+        verify_segment(path, limits)
+        state = RawSegmentState.SEALED_LOCAL
+    return RecoveryReport(report.segment_id, state, report.record_count,
+                          report.valid_prefix_bytes, None, None)
 
 
 def _fsync_directory(path: Path) -> None:
@@ -153,6 +197,11 @@ def _fsync_directory(path: Path) -> None:
         os.close(descriptor)
 
 
+SealOrigin = Literal["ORIGINAL", "RECOVERED"]
+SEAL_FIELDS = frozenset(("seal_schema", "format_version", "segment_id", "byte_length",
+                         "record_count", "segment_sha256", "seal_origin"))
+
+
 @dataclass(frozen=True)
 class SealedSegment:
     path: Path
@@ -160,20 +209,105 @@ class SealedSegment:
     sha256: str
     record_count: int
     byte_length: int
+    seal_origin: SealOrigin
+
+    def seal_bytes(self) -> bytes:
+        body: dict[str, JsonValue] = {
+            "seal_schema": "BQIP-RAW-SEAL-V1", "format_version": "2",
+            "segment_id": str(self.segment_id), "byte_length": str(self.byte_length),
+            "record_count": str(self.record_count), "segment_sha256": self.sha256,
+            "seal_origin": self.seal_origin,
+        }
+        return canonical_bytes(body)
 
 
-def verify_segment(path: Path, expected_sha256: str, limits: Limits = Limits()) -> RecoveryReport:
-    """Verify external sealed evidence, including header and record boundaries."""
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        while chunk := source.read(1 << 20):
-            digest.update(chunk)
-    if digest.hexdigest() != expected_sha256:
-        raise CaptureFormatError("SEGMENT_HASH_MISMATCH", 0)
-    report = recover(path, limits)
+def _seal_body(path: Path) -> dict[str, JsonValue]:
+    try:
+        data = path.read_bytes()
+    except FileNotFoundError as error:
+        raise CaptureFormatError("SEAL_MISSING", 0) from error
+    try:
+        body = parse_manifest(data.decode("utf-8"))
+    except ValueError as error:
+        raise CaptureFormatError("INVALID_SEAL_JSON", 0) from error
+    if canonical_bytes(body) != data:
+        raise CaptureFormatError("NON_CANONICAL_SEAL", 0)
+    if (body.keys() != SEAL_FIELDS or body["seal_schema"] != "BQIP-RAW-SEAL-V1"
+            or body["format_version"] != "2"
+            or body["seal_origin"] not in ("ORIGINAL", "RECOVERED")):
+        raise CaptureFormatError("INVALID_SEAL_SCHEMA", 0)
+    for key in ("byte_length", "record_count"):
+        value = body[key]
+        if (not isinstance(value, str) or not value.isascii() or not value.isdecimal()
+                or (len(value) > 1 and value[0] == "0") or len(value) > 20
+                or int(value) > U64_MAX):
+            raise CaptureFormatError("INVALID_SEAL_SCHEMA", 0)
+    identity, digest = body["segment_id"], body["segment_sha256"]
+    try:
+        if not isinstance(identity, str) or str(UUID(identity)) != identity:
+            raise ValueError("noncanonical UUID")
+    except ValueError as error:
+        raise CaptureFormatError("INVALID_SEAL_SCHEMA", 0) from error
+    if (not isinstance(digest, str) or len(digest) != 64
+            or any(c not in "0123456789abcdef" for c in digest)):
+        raise CaptureFormatError("INVALID_SEAL_SCHEMA", 0)
+    return body
+
+
+def _actual_segment(path: Path, origin: SealOrigin, limits: Limits) -> SealedSegment:
+    report, digest, length = _scan(path, limits)
     if report.failure is not None:
         raise CaptureFormatError(report.failure, report.failure_offset or 0)
-    return report
+    return SealedSegment(path, report.segment_id, digest, report.record_count, length, origin)
+
+
+def verify_segment(path: Path, limits: Limits = Limits()) -> SealedSegment:
+    """Verify canonical durable seal evidence against the actual finalized bytes."""
+    body = _seal_body(path.parent / "seal.json")
+    origin: SealOrigin = "ORIGINAL" if body["seal_origin"] == "ORIGINAL" else "RECOVERED"
+    actual = _actual_segment(path, origin, limits)
+    for key, value, error in (
+        ("segment_id", str(actual.segment_id), "SEAL_SEGMENT_ID_MISMATCH"),
+        ("byte_length", str(actual.byte_length), "SEAL_BYTE_LENGTH_MISMATCH"),
+        ("record_count", str(actual.record_count), "SEAL_RECORD_COUNT_MISMATCH"),
+        ("segment_sha256", actual.sha256, "SEGMENT_HASH_MISMATCH"),
+    ):
+        if body[key] != value:
+            raise CaptureFormatError(error, 0)
+    return actual
+
+
+def _publish_seal(segment: SealedSegment) -> None:
+    directory = segment.path.parent
+    partial, final = directory / "seal.partial", directory / "seal.json"
+    if final.exists():
+        raise FileExistsError(final)
+    with partial.open("xb") as output:
+        data = segment.seal_bytes()
+        if output.write(data) != len(data):
+            raise OSError("SHORT_WRITE")
+        output.flush()
+        os.fsync(output.fileno())
+    # Publication requires exclusive ownership of the quiescent directory.
+    if final.exists():
+        raise FileExistsError(final)
+    os.rename(partial, final)
+    _fsync_directory(directory)
+
+
+def recover_seal(path: Path, limits: Limits = Limits()) -> SealedSegment:
+    """Explicitly establish RECOVERED evidence; never modify capture.sealed."""
+    if path.name != "capture.sealed":
+        raise CaptureFormatError("SEALED_PATH_REQUIRED", 0)
+    if (path.parent / "seal.json").exists():
+        return verify_segment(path, limits)  # Never overwrite final evidence, even if invalid.
+    actual = _actual_segment(path, "RECOVERED", limits)
+    with path.open("rb") as source:
+        os.fsync(source.fileno())
+    # Only explicit recovery may discard incomplete evidence, after validating data.
+    (path.parent / "seal.partial").unlink(missing_ok=True)
+    _publish_seal(actual)
+    return actual
 
 
 class SegmentWriter:
@@ -191,7 +325,7 @@ class SegmentWriter:
         self._count = 0
         self._bytes = HEADER.size
         self._hash = hashlib.sha256()
-        self._write(HEADER.pack(MAGIC, VERSION, self.segment_id.bytes))
+        self._write(header(self.segment_id))
 
     @property
     def state(self) -> RawSegmentState:
@@ -228,13 +362,24 @@ class SegmentWriter:
             # Atomic within an exclusively owned directory, on one filesystem.
             os.rename(self.partial_path, self.sealed_path)
             _fsync_directory(self.directory)
+            report, digest, length = _scan(self.sealed_path, self._limits)
+            if digest != self._hash.hexdigest():
+                raise CaptureFormatError("WRITER_EXPECTED_HASH_MISMATCH", 0)
+            if report.failure is not None:
+                raise CaptureFormatError(report.failure, report.failure_offset or 0)
+            if report.segment_id != self.segment_id:
+                raise CaptureFormatError("WRITER_SEGMENT_ID_MISMATCH", 0)
+            if length != self._bytes or report.record_count != self._count:
+                raise CaptureFormatError("WRITER_COUNTS_MISMATCH", 0)
+            actual = SealedSegment(self.sealed_path, report.segment_id, digest,
+                                   report.record_count, length, "ORIGINAL")
+            _publish_seal(actual)
         except BaseException:
             self._state = RawSegmentState.FAILED
             self._file.close()
             raise
         self._state = RawSegmentState.SEALED_LOCAL
-        return SealedSegment(self.sealed_path, self.segment_id, self._hash.hexdigest(),
-                             self._count, self._bytes)
+        return actual
 
     def close(self) -> None:
         """Close without promoting incomplete evidence to SEALED_LOCAL."""

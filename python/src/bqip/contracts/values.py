@@ -110,6 +110,7 @@ class RawSegmentState(IntEnum):
     GC_ELIGIBLE = 6
     RECOVERED_PARTIAL = 7
     FAILED = 8
+    RECOVERED_UNVERIFIED = 9
 
 
 @dataclass(frozen=True)

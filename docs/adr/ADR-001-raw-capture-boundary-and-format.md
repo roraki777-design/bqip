@@ -1,79 +1,99 @@
-# ADR-001 — Raw capture boundary and BQRC v1
+# ADR-001 — Application-message raw capture and BQRC v2
 
 Status: PROPOSED / IMPLEMENTED FOR REVIEW
 
 ## Context
 
-Master Architecture v1.0 P2/P11 and Implementation Brief #001 AC-001 E/H/I
-require exact application payload preservation and a recoverable local container.
-This brief contains no receiver, realtime handoff or object-store networking.
+Master Architecture v1.0 P2/P11, Brief #001 and AC-001B require immutable original
+application payloads and verifiable local capture evidence. This brief contains
+no receiver, realtime handoff, networking or remote storage behavior.
+
+BQRC v1 was a pre-acceptance candidate. It was rejected during Architect Review
+#001 because:
+
+1. Record length prefixes were not integrity protected (AR-002).
+2. Segment header identity lacked integrity protection (AR-002).
+3. Local seal evidence was not derived durably from finalized bytes (AR-003).
+
+No accepted production data exists in BQRC v1. BQRC v2 is the first acceptance
+candidate, authorized explicitly by AC-001B. This records the rejected candidate
+rather than treating it as an accepted format or silently hiding its replacement.
 
 ## Decision
 
-Raw payload is the complete application message supplied by the transport library
-after transport framing/decompression, before any business parsing. Invalid UTF-8,
-invalid JSON and empty payloads are retained unchanged. TEXT is a transport label,
-not an assertion that bytes decode successfully.
+Raw capture remains the complete application message after transport framing/
+decompression and before business parsing. Invalid UTF-8, invalid JSON and empty
+payloads remain unchanged; TEXT is a transport label, not a Unicode guarantee.
+Framing preserves original metadata Protobuf bytes, including unknown fields.
 
-BQRC v1 header is 24 bytes: ASCII BQRC (4), uint32 big-endian version 1 (4),
-segment UUID in RFC byte order (16). Records follow exactly AC-001:
-uint32 metadata length, uint32 payload length, metadata Protobuf bytes, payload
-bytes, uint32 big-endian CRC32C over metadata concatenated with payload.
-CRC32C uses Castagnoli, reflected polynomial 0x82f63b78, init/xorout 0xffffffff.
-The framing layer preserves metadata bytes too, including unknown Protobuf fields.
+V2 uses a 28-byte header: BQRC, uint32 BE version 2, 16 UUID bytes and uint32 BE
+CRC32C over those first 24 bytes. Each record carries uint32 BE metadata/payload
+lengths, both bodies and uint32 BE CRC32C over the exact received eight prefix
+bytes plus both bodies. Header error precedence is truncated/magic/version/CRC.
+Default allocation limits remain 1 MiB metadata and 64 MiB payload per record.
 
-Default read limits are 1 MiB metadata and 64 MiB payload per record, checked before
-allocation. They are reader configuration, not a narrower on-disk integer type.
-The reader streams frames; it does not load whole segments into memory.
+A writer exclusively owns a UUID directory. On Linux/POSIX, it flushes, fsyncs and
+closes capture.partial, refuses overwrite, atomically renames to capture.sealed
+and fsyncs the directory. It reopens the finalized file read-only; a hashing reader
+validates header/record integrity and EOF while hashing exactly those same disk
+bytes and counting actual lengths/records. Actual and write-time expectations must
+agree. Mismatch produces FAILED and no newly published valid seal.json.
 
-Each writer exclusively creates a UUID-named directory beneath an existing spool
-root. Supported durability target is Linux/POSIX with file and directory fsync
-and same-filesystem atomic rename. The writer finishes a full frame, flushes,
-fsyncs the file, derives SHA-256 and counts, renames capture.partial to
-capture.sealed, and fsyncs the containing directory. It returns SEALED_LOCAL only
-after success. Errors leave evidence and put the writer in FAILED; a failure
-after rename may leave the sealed name present and must be investigated.
+The writer uses the actual finalized-file SHA/count/length to build restricted-JCS
+seal evidence. It exclusively creates seal.partial, writes/flushes/fsyncs/closes,
+refuses existing seal.json, atomically renames and fsyncs the directory. Only then
+may its state become SEALED_LOCAL. seal.json has the six AC-001B normative fields
+plus seal_origin: ORIGINAL or RECOVERED. All fields are strings, with canonical
+UUID, unsigned uint64 decimal strings and lowercase SHA-256. Exact schema and
+canonical bytes are mandatory; no fields are excluded from seal hashing.
 
-Recovery requires a closed/quiescent source. It scans to the first invalid frame,
-reports the verified prefix and failure offset, and never overwrites the source.
-A truncated tail may be copied to a new UUID segment; CRC corruption is not
-skipped. The caller must retain the returned recovery report. Recovered payloads,
-metadata bytes and capture IDs remain unchanged. A recovered segment is not a
-claim that the original capture interval was complete.
+verify_segment verifies both files, all CRCs and EOF, schema/canonical JSON,
+identity, byte length, record count and actual disk SHA. A suffix alone establishes
+no state. Complete sealed data without final evidence is RECOVERED_UNVERIFIED,
+appended at RawSegmentState tag 9; tags 0–8 are unchanged.
 
-The physical state enum includes all AC-001 states. Only local creation/seal/
-recovery/failure behavior exists. No function asserts upload, remote verification,
-manifest publication or GC eligibility. No automatic deletion is implemented.
+Explicit recover_seal validates the quiescent orphan without changing capture
+bytes, syncs the data file, replaces stale seal.partial only after validation and
+publishes RECOVERED evidence durably. Existing final evidence is verified and
+never silently replaced. A valid seal.json always takes precedence over a partial.
+A malformed final seal remains evidence requiring investigation.
+
+Truncated-source salvage remains a distinct recover_to operation into a new UUID
+segment; its new writer's seal is ORIGINAL and its source RecoveryReport must be
+retained. CRC corruption is never skipped. Remote-state enums remain contracts.
 
 ## Alternatives considered
 
-* Packet capture: outside the explicitly selected application-message boundary.
-* In-place truncation: rejected because it destroys the damaged source evidence.
-* Automatic seal on close: rejected because dropping a writer is not a durability
-  acknowledgment.
-* S3 uploader: expressly outside this brief.
+* Retain v1 for compatibility: no accepted production data exists; only its
+  rejection is tested as a negative version fixture.
+* Protect only body bytes: reproduced 3/5 → 4/4 partition corruption defeats it.
+* Trust the incremental writer SHA: reproduced disk mutation defeats it.
+* Infer sealing from a filename: would promote publication-orphan crash states.
+* Rebuild evidence automatically during inspection: would hide recovered provenance.
+* A separate JCS package or new I/O framework: unnecessary; existing authorized
+  primitives implement this bounded local protocol.
 
 ## Consequences
 
-Framing integrity and typed metadata validity are distinct. Rust exposes a typed
-validated Protobuf decode. Python's validation adapter targets official generated
-messages, with tests that fail visibly if its runtime/bindings are absent. Both
-language suites have now executed successfully. Framing retains opaque metadata
-bytes, including unknown fields, without decoding and re-encoding evidence.
+The actual file hash and structural verification use one read stream. Reader and
+seal protocols require a single owner and quiescent input, not concurrent external
+mutation during verification. The tests explicitly mutate a flushed partial file
+before sealing and require WRITER_EXPECTED_HASH_MISMATCH/FAILED with no seal.json.
 
-CRC is not authentication. Segment SHA-256 must be retained externally to detect
-changes such as deletion of an entire final frame. Scan success and a filename
-alone do not establish historical completeness or object-store durability.
-Filesystem/power-loss qualification remains unperformed; tests inject local
-failures and do not simulate a real power cut. Live P11 is not claimed by this
-format-only implementation.
+An I/O failure after a rename may leave the renamed file present. The active
+writer still fails; restart must verify both files. Fault injection covers the
+fsync publication windows in Python and existing-evidence collisions in both
+languages. No real power cut, hardware cache guarantee or remote durability is
+claimed. Recovery origin cannot establish an orphan's original completeness.
+CRC is not authentication; independent segment evidence detects whole-record loss.
 
 ## Frozen invariants affected
 
-P1, P2, P4, P6, P10 and the preservation boundary supporting future P11.
-No invariant is altered.
+P1, P2, P4, P6, P10 and the preservation boundary supporting future P11. AC-001B
+explicitly replaces the rejected format; no unrelated invariant is changed.
+The live P11 guarantee awaits a future ingestion brief.
 
 ## What remains BENCHMARK/RESEARCH REQUIRED
 
-Segment rotation size, operational limits, fsync cost, spool exposure/RPO, cloud
-resources and capture throughput. No numeric performance claim is made.
+Segment rotation, fsync/readback costs, spool exposure/RPO, bounded memory at scale,
+cloud sizing and capture throughput. No performance claim or new infrastructure.
