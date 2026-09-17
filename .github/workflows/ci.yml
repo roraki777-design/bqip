@@ -18,7 +18,9 @@ jobs:
         with:
           python-version: '3.12.14'
       - name: Required deliverables
-        run: python tools/readiness.py
+        run: |
+          python tools/readiness.py
+          sha256sum --check FILES.sha256
       - name: Rust toolchain
         run: rustup toolchain install 1.85.0 --profile minimal --component rustfmt --component clippy
       - name: Protobuf compiler 33.6
