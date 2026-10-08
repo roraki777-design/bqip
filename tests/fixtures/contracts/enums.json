@@ -212,6 +212,26 @@
       "token": "CANONICAL_STATE_DIVERGENCE",
       "wire_name": "CAUSE_CODE_CANONICAL_STATE_DIVERGENCE",
       "number": 10
+    },
+    {
+      "token": "VENUE_IDENTITY_CONFLICT",
+      "wire_name": "CAUSE_CODE_VENUE_IDENTITY_CONFLICT",
+      "number": 11
+    },
+    {
+      "token": "METADATA_EFFECTIVE_TIME_UNKNOWN",
+      "wire_name": "CAUSE_CODE_METADATA_EFFECTIVE_TIME_UNKNOWN",
+      "number": 12
+    },
+    {
+      "token": "METADATA_INCOMPLETE",
+      "wire_name": "CAUSE_CODE_METADATA_INCOMPLETE",
+      "number": 13
+    },
+    {
+      "token": "PROFILE_MISMATCH",
+      "wire_name": "CAUSE_CODE_PROFILE_MISMATCH",
+      "number": 14
     }
   ],
   "RawLossStatus": [

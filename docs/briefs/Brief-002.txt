@@ -1,0 +1,1320 @@
+BQIP — IMPLEMENTATION BRIEF #002
+BINANCE BTCUSDT USDⓈ-M PERPETUAL
+VENUE PROFILE & GOLDEN MARKET-DATA CONTRACTS
+
+ROLE
+
+You remain BQIP Principal Implementation Engineer.
+
+Architecture Lead:
+ChatGPT.
+
+Product Owner:
+user.
+
+Authoritative architecture:
+
+MASTER ARCHITECTURE SPEC v1.0 — FROZEN.
+
+Accepted Foundation Baseline:
+
+repository:
+roraki777-design/bqip
+
+accepted commit:
+c7deed5b17c9bb0dbc50622e3c3ef565907c92d7
+
+Implementation Brief #001:
+ACCEPTED / CLOSED.
+
+Start Brief #002 from EXACTLY that baseline.
+
+Do not rewrite Foundation.
+
+============================================================
+0. CURRENT BINANCE DOCUMENTATION CONTEXT
+============================================================
+
+The Architecture Lead reviewed current official Binance Developer
+documentation on 2026-10-03.
+
+Important:
+
+Binance USDⓈ-M WebSocket routing has changed.
+
+Current routed endpoints:
+
+PUBLIC high-frequency market data:
+wss://fstream.binance.com/public
+
+MARKET regular market data:
+wss://fstream.binance.com/market
+
+PRIVATE user data:
+wss://fstream.binance.com/private
+
+Legacy unrouted WebSocket assumptions must NOT be used.
+
+For this brief:
+
+Diff depth belongs to PUBLIC.
+
+Aggregate trades belong to MARKET.
+
+The implementation artifacts must cite the official Binance
+documentation titles and retrieval date used to define the profile.
+
+If current official Binance documentation contradicts any detail in
+this brief:
+
+DO NOT silently choose one.
+
+Return:
+
+DOCUMENTATION CONFLICT
+
+with exact evidence.
+
+============================================================
+1. OBJECTIVE
+============================================================
+
+Create the normative venue contract for the first real BQIP market:
+
+BINANCE
+USDⓈ-M FUTURES
+BTCUSDT
+PERPETUAL
+
+This brief defines semantics BEFORE networking code exists.
+
+Deliver:
+
+1. BinanceUsdMVenueProfile v1.
+2. instrument metadata contract.
+3. native aggregate-trade schema.
+4. native diff-depth schema.
+5. REST depth-snapshot schema.
+6. exact snapshot/delta synchronization contract.
+7. additive canonical trade-granularity extension through ADR-015.
+8. deterministic venue-event identity recipes.
+9. golden external fixtures.
+10. property/state-machine tests.
+11. cross-language Rust/Python parity where normative contracts exist.
+
+DO NOT implement a real WebSocket or REST client yet.
+
+============================================================
+2. FROZEN VENUE IDENTITY
+============================================================
+
+Venue:
+
+BINANCE
+
+product family:
+
+USD_M_FUTURES
+
+exchange symbol:
+
+BTCUSDT
+
+stream symbol:
+
+btcusdt
+
+pair:
+
+BTCUSDT
+
+contract type:
+
+PERPETUAL
+
+BQIP canonical product type:
+
+LINEAR
+
+base asset:
+
+BTC
+
+quote asset:
+
+USDT
+
+expected margin asset:
+
+USDT
+
+Do NOT hardcode mutable trading filters such as current tick size,
+step size or quantity bounds.
+
+Those values originate from temporal InstrumentMetadata built from
+exchangeInfo evidence.
+
+============================================================
+3. OFFICIAL BINANCE SOURCES
+============================================================
+
+Profile must formally reference these current official documentation
+areas:
+
+- Futures USDⓈ-M — WebSocket Market Streams — Connect
+- Important WebSocket Change Notice — Base URL Split & Migration
+- Futures USDⓈ-M — Public WebSocket streams
+- Diff. Book Depth Streams
+- Aggregate Trade Streams
+- How to manage a local order book correctly
+- Futures USDⓈ-M REST Market Data
+- Exchange Information
+- Order Book
+- Recent Trades List
+
+Record:
+
+documentation source
+retrieval date
+document title
+semantic rule extracted
+
+Do not scrape documentation at runtime.
+
+These references document the contract used to author fixtures.
+
+============================================================
+4. VENUE PROFILE
+============================================================
+
+Create a normative machine-readable profile, for example:
+
+config/venues/binance/usdm/btcusdt-perpetual-v1.json
+
+or another simple deterministic location consistent with the repo.
+
+The profile must contain at minimum:
+
+profile_id
+profile_version
+
+venue
+product_family
+
+symbol
+stream_symbol
+pair
+
+contract_type
+canonical_product_type
+
+base_asset
+quote_asset
+expected_margin_asset
+
+REST base:
+https://fapi.binance.com
+
+exchange_info_endpoint:
+/fapi/v1/exchangeInfo
+
+depth_snapshot_endpoint:
+/fapi/v1/depth
+
+depth_snapshot_limit:
+1000
+
+depth_stream_route:
+PUBLIC
+
+depth_stream:
+btcusdt@depth@100ms
+
+aggregate_trade_stream_route:
+MARKET
+
+aggregate_trade_stream:
+btcusdt@aggTrade
+
+expected_symbol_type_if_present:
+1
+
+metadata_source:
+EXCHANGE_INFO
+
+book_contains_rpi:
+false
+
+The profile hash must use the existing deterministic manifest/JCS
+infrastructure where appropriate.
+
+No credentials.
+
+No authenticated endpoint.
+
+============================================================
+5. CURRENT WEBSOCKET TRANSPORT PROFILE
+============================================================
+
+Document but DO NOT yet implement the transport runtime.
+
+Depth future connection:
+
+wss://fstream.binance.com/public/ws/btcusdt@depth@100ms
+
+Aggregate-trade future connection:
+
+wss://fstream.binance.com/market/ws/btcusdt@aggTrade
+
+These are deliberately separate connections.
+
+Reason:
+
+- Binance routes PUBLIC and MARKET traffic separately.
+- it preserves clearer failure domains;
+- it improves source/session provenance;
+- it avoids mixing order-book continuity with trade-stream lifecycle.
+
+Future collector implementation must expect connections to be
+recycled/disconnected.
+
+Document current Binance constraints from official docs including:
+
+- connection lifetime;
+- ping/pong requirements;
+- subscription/control-message limits;
+- maximum subscriptions.
+
+Do not implement reconnect code in this brief.
+
+============================================================
+6. EXCHANGE INFO CONTRACT
+============================================================
+
+Define parsing/validation of the BTCUSDT record from:
+
+GET /fapi/v1/exchangeInfo
+
+Mandatory profile validation:
+
+symbol == BTCUSDT
+
+pair == BTCUSDT
+
+contractType == PERPETUAL
+
+status must be represented;
+do not assume forever that it is TRADING.
+
+baseAsset == BTC
+
+quoteAsset == USDT
+
+marginAsset == USDT
+
+Critical rule:
+
+pricePrecision MUST NOT define tick_size.
+
+quantityPrecision MUST NOT define step_size.
+
+Resolve price increment from the applicable:
+
+PRICE_FILTER.tickSize
+
+Resolve quantity increment from the applicable quantity filter
+stepSize.
+
+Preserve the raw filter set in source evidence.
+
+If required filters are absent:
+
+METADATA_INCOMPLETE
+
+Do not invent defaults.
+
+============================================================
+7. TEMPORAL INSTRUMENT METADATA
+============================================================
+
+Map validated exchangeInfo evidence into the existing bitemporal
+InstrumentMetadataVersion contract.
+
+A metadata version must preserve at minimum:
+
+instrument_id
+
+venue = BINANCE
+
+symbol = BTCUSDT
+
+contract_type = PERPETUAL
+
+product_type = LINEAR
+
+base_asset = BTC
+quote_asset = USDT
+margin_asset = USDT
+
+tick_size
+lot_size / step_size
+
+applicable quantity bounds where modeled
+
+source raw reference
+source hash
+
+effective_from
+effective_to
+
+known_from
+known_to
+
+metadata_version
+
+Do not overwrite historical metadata.
+
+For Brief #002 it is acceptable for effective_from of an observed
+exchangeInfo snapshot to be UNKNOWN unless Binance provides evidence
+for the actual economic transition time.
+
+Do NOT falsify effective time by equating HTTP receive time with the
+time the venue changed a filter.
+
+In that case preserve:
+
+known_from = observation receive time
+
+and explicitly represent uncertain effective provenance.
+
+If the existing metadata schema cannot express this correctly:
+
+report SCHEMA EXTENSION REQUIRED.
+
+============================================================
+8. BINANCE AGGREGATE TRADE — NATIVE SEMANTICS
+============================================================
+
+The Binance stream:
+
+btcusdt@aggTrade
+
+is NOT an individual-fill feed.
+
+The official venue semantics aggregate market trades that share:
+
+same price
+same taking side
+
+over a 100ms aggregation interval.
+
+Native required fields:
+
+e
+E
+s
+a
+p
+q
+nq
+f
+l
+T
+m
+st if present
+
+Semantics:
+
+a =
+aggregate trade ID
+
+p =
+aggregate price
+
+q =
+total aggregate quantity
+
+nq =
+normal quantity excluding RPI trades
+
+f =
+first native trade ID contained in aggregate
+
+l =
+last native trade ID contained in aggregate
+
+T =
+trade time supplied by Binance
+
+m =
+buyer-is-maker
+
+st =
+symbol type after Binance UM/CM migration
+
+For this profile:
+
+if st exists:
+st MUST equal 1.
+
+If st indicates another product family:
+
+PROFILE_MISMATCH
+
+Do not silently consume it as BTCUSDT USDⓈ-M.
+
+============================================================
+9. ADR-015 — TRADE SOURCE GRANULARITY
+============================================================
+
+Architecture Lead authorizes drafting and implementing the minimum
+additive canonical contract required to prevent Binance aggTrade from
+being mislabeled as an individual fill.
+
+Create:
+
+ADR-015-canonical-trade-source-granularity.md
+
+State initially:
+
+PROPOSED / IMPLEMENTED FOR ARCHITECT REVIEW
+
+Add a canonical enum:
+
+TradeGranularity
+
+UNKNOWN
+INDIVIDUAL
+AGGREGATED
+
+Existing numeric tags must never be renumbered if extending an
+existing enum.
+
+Add only the minimum fields necessary to the canonical TradeEvent
+contract:
+
+granularity
+
+aggregate_id optional
+
+first_venue_trade_id optional
+
+last_venue_trade_id optional
+
+quantity_ex_rpi optional
+
+If TradeEvent does not yet exist as a Foundation Protobuf contract,
+create the minimum market-data contract needed for this brief rather
+than inventing future feature fields.
+
+For Binance aggTrade:
+
+granularity = AGGREGATED
+
+venue_event_id =
+aggregate trade ID `a`
+
+aggregate_id =
+`a`
+
+first_venue_trade_id =
+`f`
+
+last_venue_trade_id =
+`l`
+
+quantity =
+`q`
+
+quantity_ex_rpi =
+`nq`
+
+price =
+`p`
+
+No individual child TradeEvents may be fabricated from the f..l ID
+range.
+
+The range proves membership IDs, not individual fill timestamps or
+individual quantities.
+
+============================================================
+10. AGGRESSOR SEMANTICS
+============================================================
+
+Binance:
+
+m == true
+means buyer is maker.
+
+Therefore:
+
+m == true
+=> seller took liquidity
+=> aggressor side SELL
+
+m == false
+=> buyer took liquidity
+=> aggressor side BUY
+
+Implement this deterministically.
+
+Never rename `m` internally as buyer_aggressor.
+
+Golden fixtures must explicitly test both directions.
+
+============================================================
+11. LIQUIDATION SEMANTICS
+============================================================
+
+Do NOT label an aggTrade as liquidation based on inference.
+
+The aggTrade stream excludes insurance-fund and ADL trades according
+to current Binance documentation.
+
+Liquidation streams are separate venue data.
+
+Therefore in this brief:
+
+canonical liquidation status for aggTrade =
+NOT_OBSERVED_FROM_THIS_SOURCE
+
+Do not infer liquidation from price, size or timing.
+
+Liquidation stream implementation is DEFERRED.
+
+============================================================
+12. RPI SEMANTICS
+============================================================
+
+Current Binance semantics matter.
+
+For aggTrade:
+
+q includes all market trades including RPI contribution.
+
+nq represents normal quantity excluding trades involving RPI orders.
+
+RPI individual membership is not exposed with special tags inside
+the aggregate.
+
+Therefore:
+
+quantity = q
+
+quantity_ex_rpi = nq
+
+derived_rpi_quantity may be calculated as:
+
+q - nq
+
+ONLY as a DERIVED quantity with explicit provenance.
+
+Do not claim which specific child trade IDs were RPI.
+
+For the ordinary depth feed and REST depth endpoint:
+
+RPI orders are excluded.
+
+This limitation must appear in the VenueProfile and docs.
+
+Do not call the reconstructed book "complete exchange liquidity".
+
+Call it the venue-visible non-RPI order book represented by this
+feed.
+
+============================================================
+13. BINANCE DIFF DEPTH — NATIVE CONTRACT
+============================================================
+
+Stream:
+
+btcusdt@depth@100ms
+
+route:
+
+PUBLIC
+
+Required native fields:
+
+e
+E
+T
+s
+U
+u
+pu
+b
+a
+ps if present
+st if present
+
+Semantics:
+
+U =
+first update ID in event
+
+u =
+final update ID in event
+
+pu =
+final update ID of previous stream event
+
+b =
+bid level replacements
+
+a =
+ask level replacements
+
+Each price-level quantity is an ABSOLUTE quantity.
+
+It is NOT a delta quantity.
+
+quantity == 0
+means remove that price level.
+
+Deleting a nonexistent local price level is allowed and is not itself
+a corruption.
+
+If st exists it must be 1.
+
+If ps exists it must be BTCUSDT for this profile.
+
+============================================================
+14. REST DEPTH SNAPSHOT
+============================================================
+
+Normative recovery request:
+
+GET /fapi/v1/depth
+
+symbol:
+BTCUSDT
+
+limit:
+1000
+
+Snapshot contract:
+
+lastUpdateId
+E
+T
+bids
+asks
+
+Each level:
+
+price
+absolute quantity
+
+Do not persist REST snapshot bytes as if they came from WebSocket.
+
+Their RawCapture provenance must identify:
+
+transport = HTTP/REST
+endpoint
+query parameters
+HTTP status
+receive timestamp
+raw body reference
+
+No networking is implemented in this brief; define fixtures and
+contracts only.
+
+============================================================
+15. CANONICAL BOOK SYNC ALGORITHM
+============================================================
+
+Freeze the current documented USDⓈ-M algorithm.
+
+STATE:
+
+EMPTY
+BUFFERING
+SNAPSHOT_REQUIRED
+BRIDGING
+HEALTHY
+DEGRADED
+RESYNC_REQUIRED
+
+Algorithm:
+
+A. Begin buffering WebSocket diff-depth events.
+
+B. Obtain REST depth snapshot.
+
+C. Let S = snapshot.lastUpdateId.
+
+D. Drop buffered events where:
+
+u < S
+
+E. Find the first remaining event satisfying:
+
+U <= S
+AND
+u >= S
+
+If no event bridges S:
+
+snapshot cannot yet be connected to the buffered stream.
+
+Retry according to future recovery policy.
+
+F. Initialize local book from snapshot.
+
+G. Apply the bridge event.
+
+H. For every subsequent applied depth event:
+
+current.pu MUST equal previous.u.
+
+If:
+
+current.pu != previous.u
+
+then:
+
+DO NOT continue publishing a trusted canonical book.
+
+Emit:
+
+VENUE_GAP or appropriate documented continuity cause
+
+Book state:
+
+DEGRADED
+
+and require:
+
+RESYNC_REQUIRED.
+
+I. For each bid/ask update:
+
+quantity > 0:
+replace the absolute quantity for that price.
+
+quantity == 0:
+remove the price.
+
+Do not add quantities.
+
+Do not subtract quantities.
+
+============================================================
+16. IMPORTANT SEQUENCE RULE
+============================================================
+
+Do NOT substitute generic Spot-order-book rules from memory.
+
+For this USDⓈ-M profile the authoritative continuation check is:
+
+current.pu == previous.u
+
+The initial bridge uses the current documented Binance USDⓈ-M rule:
+
+U <= snapshot.lastUpdateId
+AND
+u >= snapshot.lastUpdateId
+
+Fixtures must test this exact behavior.
+
+============================================================
+17. GOLDEN FIXTURES
+============================================================
+
+Create immutable external fixtures.
+
+Tests MUST NOT require live internet.
+
+Required groups:
+
+A. EXCHANGE INFO
+
+1. valid BTCUSDT PERPETUAL record
+2. wrong contractType
+3. wrong marginAsset
+4. non-TRADING status preserved
+5. missing PRICE_FILTER
+6. missing quantity step filter
+7. misleading pricePrecision different from tickSize
+8. misleading quantityPrecision different from stepSize
+
+B. AGG TRADE
+
+1. m=true => SELL aggressor
+2. m=false => BUY aggressor
+3. aggregate containing multiple underlying trade IDs
+4. f == l single-member aggregate
+5. q != nq RPI contribution
+6. q == nq no derived RPI quantity
+7. st=1 accepted
+8. st=2 rejected/profile mismatch
+9. missing optional migration field handled according to frozen policy
+10. malformed decimal
+11. f > l rejected
+12. impossible negative quantity rejected
+
+C. DEPTH
+
+1. ordinary update
+2. several price levels in one event
+3. zero quantity deletion
+4. nonexistent-level deletion accepted
+5. absolute replacement proves no additive interpretation
+6. st=1 accepted
+7. st=2 rejected
+8. wrong ps rejected
+9. malformed level
+10. U > u rejected
+
+D. SNAPSHOT BRIDGE
+
+Construct an external deterministic sequence containing:
+
+snapshot S
+
+event with u < S -> discarded
+
+valid bridge:
+U <= S <= u
+
+next event:
+pu == previous.u
+
+next event:
+pu mismatch
+
+Expected:
+
+HEALTHY until mismatch
+
+then:
+
+DEGRADED
+RESYNC_REQUIRED
+
+E. BOUNDARIES
+
+Test exact boundaries:
+
+u == S - 1
+u == S
+
+U == S
+U < S
+u == S
+u > S
+
+Do not casually change `<` to `<=`.
+
+============================================================
+18. FIXTURE PROVENANCE
+============================================================
+
+Separate two concepts.
+
+NORMATIVE SYNTHETIC FIXTURES:
+
+small manually authored messages designed to exercise exact contract
+boundaries.
+
+OBSERVED PUBLIC FIXTURES:
+
+optional public Binance payloads captured during this brief if
+network access exists.
+
+Observed fixtures must record:
+
+retrieval timestamp
+endpoint/stream
+raw SHA-256
+source type
+documentation/profile version
+
+Never make tests depend on retrieving them again.
+
+Do not include credentials.
+
+============================================================
+19. LOGICAL IDENTITY RECIPES
+============================================================
+
+Define venue-specific identity recipes under the existing BQIP-ID-V1
+framework.
+
+AGG TRADE:
+
+venue_event_id =
+decimal ASCII value of `a`
+
+logical event components must include enough namespace to prevent
+collision across:
+
+venue
+product family
+symbol
+native event class
+aggregate trade ID
+
+Example conceptual namespace:
+
+BINANCE
+USD_M_FUTURES
+BTCUSDT
+AGG_TRADE
+<a>
+
+Do not use price/time/quantity as identity if Binance already gives
+the stable aggregate ID.
+
+DEPTH UPDATE:
+
+Do NOT invent one economic `logical_event_id` from price levels.
+
+Use venue-native sequencing identity appropriate to the whole depth
+event.
+
+Candidate components:
+
+BINANCE
+USD_M_FUTURES
+BTCUSDT
+DEPTH_UPDATE
+session identity where needed
+U
+u
+
+You must analyze replay stability before deciding whether session
+identity belongs in logical identity versus capture identity.
+
+If ambiguity remains:
+
+report IDENTITY DECISION REQUIRED.
+
+Do not guess.
+
+============================================================
+20. TIME SEMANTICS
+============================================================
+
+Preserve Binance-native millisecond fields exactly.
+
+Convert into BQIP canonical nanoseconds using checked integer
+multiplication:
+
+ms * 1_000_000
+
+No floating point.
+
+Depth:
+
+E = venue event time
+T = venue transaction time
+
+AggTrade:
+
+E = venue event time
+T = venue trade time
+
+BQIP receive_timestamp remains independently captured later by the
+collector.
+
+Do NOT use:
+
+receive_timestamp - E
+
+as pure network latency.
+
+P3 remains authoritative.
+
+============================================================
+21. UNKNOWN FIELDS / FORWARD COMPATIBILITY
+============================================================
+
+Venue JSON parsers must preserve safety under API evolution.
+
+For required semantic fields:
+
+missing => visible parse/contract failure.
+
+For unknown additive JSON fields:
+
+do NOT fail merely because Binance added a field unless strictness is
+required to protect semantic correctness.
+
+Unknown fields should be observable/loggable for schema-drift
+monitoring.
+
+Do not silently map new fields into known semantics.
+
+============================================================
+22. TEST ARCHITECTURE
+============================================================
+
+Implement tests for:
+
+Rust unit tests
+Python unit tests where parity is normative
+golden venue fixtures
+property tests
+state-machine transition tests
+contract validation tests
+schema-drift cases
+
+Minimum properties:
+
+- decimal parsing is exact;
+- timestamps convert without floating point;
+- aggTrade ID recipe deterministic;
+- same aggregate ID in different venue/product namespace cannot
+  collide;
+- depth quantity replacement is idempotent;
+- zero delete is idempotent;
+- depth event cannot advance HEALTHY after pu mismatch;
+- bridge boundary behavior exactly matches fixture contract;
+- parser cannot turn st=2 into USD_M;
+- tickSize never comes from pricePrecision;
+- stepSize never comes from quantityPrecision.
+
+============================================================
+23. NO REAL NETWORK CLIENT
+============================================================
+
+Explicitly forbidden in Brief #002:
+
+Tokio networking
+WebSocket connection runtime
+HTTP client runtime
+automatic reconnect
+live collector loops
+S3
+NATS
+JetStream
+Parquet
+DuckDB
+ClickHouse
+terminal
+features
+strategy
+Risk
+OMS
+execution
+
+You may use offline public fixture authoring tooling if needed.
+
+No test may require network.
+
+============================================================
+24. REPOSITORY / BRANCH
+============================================================
+
+Work from exact accepted baseline:
+
+c7deed5b17c9bb0dbc50622e3c3ef565907c92d7
+
+Create a new development branch conceptually named:
+
+brief-002
+
+Do NOT alter history of brief-001.
+
+Foundation baseline remains immutable.
+
+============================================================
+25. EXPECTED FILE AREAS
+============================================================
+
+Use the existing project organization.
+
+Likely additions may include:
+
+docs/venues/binance-usdm/
+docs/adr/ADR-015-canonical-trade-source-granularity.md
+
+config/venues/...
+
+proto/bqip/v1/
+  market.proto
+if required
+
+rust/crates/
+  venue/profile/parser modules
+within a minimal appropriate crate
+
+python/src/bqip/
+  corresponding contract/parity helpers only where justified
+
+tests/fixtures/binance-usdm/
+tests for venue profile and state machine
+
+Do NOT create a microservice for the venue profile.
+
+Do NOT create an exchange collector service yet.
+
+============================================================
+26. DEPENDENCY POLICY
+============================================================
+
+Prefer existing dependencies and stdlib.
+
+Parsing JSON does not justify a major framework.
+
+Do not add Tokio.
+
+Do not add reqwest.
+
+Do not add WebSocket libraries.
+
+Do not add exchange SDKs.
+
+BQIP will own its venue semantics.
+
+If a new dependency is genuinely necessary:
+
+report:
+
+DEPENDENCY APPROVAL REQUIRED
+
+before adding it.
+
+============================================================
+27. DOCUMENTATION DRIFT GUARD
+============================================================
+
+Create a small source manifest documenting the official Binance
+documents used to freeze VenueProfile v1.
+
+It should include:
+
+document title
+retrieval date
+semantic areas relied upon
+
+Do not hash website HTML as if Binance guaranteed stable rendering.
+
+Instead preserve the exact BQIP semantic assertions and source
+references.
+
+Future doc changes require profile review, not automatic silent
+mutation.
+
+============================================================
+28. DEFINITION OF DONE
+============================================================
+
+Brief #002 is complete only if:
+
+- work begins from accepted Foundation commit;
+- BinanceUsdMVenueProfile v1 exists;
+- BTCUSDT instrument semantics are explicit;
+- no mutable tick/step value is hardcoded as architectural truth;
+- exchangeInfo parser uses filters correctly;
+- aggregate trades preserve aggregate granularity;
+- ADR-015 exists and accurately matches implementation;
+- no child fills are fabricated;
+- RPI semantics are preserved;
+- diff-depth native schema preserves U/u/pu;
+- snapshot schema preserves lastUpdateId;
+- book bridge state machine matches current Binance USDⓈ-M rules;
+- pu mismatch forces DEGRADED/RESYNC;
+- absolute quantities are never treated as deltas;
+- st/product-family validation exists;
+- golden fixtures cover all listed boundary cases;
+- tests are offline;
+- Rust gates pass;
+- Python gates pass where applicable;
+- Protobuf drift check passes;
+- existing Brief #001 tests remain green;
+- clean-checkout reproducibility passes;
+- dependency/security gates remain green;
+- no networking runtime exists;
+- no Brief #003 work exists.
+
+============================================================
+29. REQUIRED DELIVERY REPORT
+============================================================
+
+Return:
+
+BQIP IMPLEMENTATION BRIEF #002 VALIDATION REPORT
+
+Include:
+
+Base commit:
+Brief #002 commit:
+
+Files changed:
+
+VenueProfile:
+PASS / FAIL
+
+ExchangeInfo semantics:
+PASS / FAIL
+
+AggTrade semantics:
+PASS / FAIL
+
+Trade granularity:
+PASS / FAIL
+
+ADR-015:
+PASS / FAIL
+
+Depth semantics:
+PASS / FAIL
+
+Snapshot bridge:
+PASS / FAIL
+
+Golden fixtures:
+PASS / FAIL
+
+Rust:
+fmt
+clippy
+tests
+
+Python:
+tests
+ruff
+mypy
+
+Protobuf:
+generation
+drift
+
+Foundation regression:
+PASS / FAIL
+
+Security:
+cargo-audit
+pip-audit
+gitleaks
+
+Clean checkout:
+PASS / FAIL
+
+Network runtime added:
+MUST BE NO
+
+Definition of Done:
+PASS / FAIL
+
+List every assumption.
+
+List every official Binance semantic assertion relied upon.
+
+List every ambiguity found.
+
+If all gates pass:
+
+end exactly:
+
+IMPLEMENTATION BRIEF #002 COMPLETE — AWAITING ARCHITECT REVIEW
+
+Otherwise:
+
+BRIEF #002 BLOCKED — AWAITING ARCHITECT DECISION
+
+Do NOT begin Brief #003.

@@ -1,7 +1,15 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root =
         std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR")?).join("../../../proto");
-    let names = ["common", "capture", "metadata", "manifests", "operational"];
+    let names = [
+        "common",
+        "capture",
+        "metadata",
+        "manifests",
+        "operational",
+        "source",
+        "market",
+    ];
     let files: Vec<_> = names
         .iter()
         .map(|name| root.join(format!("bqip/v1/{name}.proto")))

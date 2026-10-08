@@ -1,0 +1,38 @@
+{
+  "EffectiveTimeBasis": {
+    "UNSPECIFIED": 0,
+    "VENUE_DECLARED": 1,
+    "BQIP_CONFIRMED": 2,
+    "UNKNOWN": 3
+  },
+  "MetadataResolutionBasis": {
+    "UNSPECIFIED": 0,
+    "EFFECTIVE_INTERVAL": 1,
+    "KNOWLEDGE_ONLY": 2
+  },
+  "TradeGranularity": {
+    "UNKNOWN": 0,
+    "INDIVIDUAL": 1,
+    "AGGREGATED": 2
+  },
+  "AggressorSide": {
+    "UNKNOWN": 0,
+    "BUY": 1,
+    "SELL": 2
+  },
+  "LiquidationObservation": {
+    "UNKNOWN": 0,
+    "NOT_OBSERVED_FROM_THIS_SOURCE": 1
+  },
+  "SourceTransport": {
+    "UNSPECIFIED": 0,
+    "HTTP_REST": 1,
+    "WEBSOCKET": 2
+  },
+  "CauseCode_additions": {
+    "VENUE_IDENTITY_CONFLICT": 11,
+    "METADATA_EFFECTIVE_TIME_UNKNOWN": 12,
+    "METADATA_INCOMPLETE": 13,
+    "PROFILE_MISMATCH": 14
+  }
+}

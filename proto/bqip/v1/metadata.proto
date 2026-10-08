@@ -1,6 +1,20 @@
 syntax = "proto3";
 package bqip.v1;
 import "bqip/v1/common.proto";
+import "bqip/v1/source.proto";
+
+enum EffectiveTimeBasis {
+  EFFECTIVE_TIME_BASIS_UNSPECIFIED = 0;
+  EFFECTIVE_TIME_BASIS_VENUE_DECLARED = 1;
+  EFFECTIVE_TIME_BASIS_BQIP_CONFIRMED = 2;
+  EFFECTIVE_TIME_BASIS_UNKNOWN = 3;
+}
+
+enum MetadataResolutionBasis {
+  METADATA_RESOLUTION_BASIS_UNSPECIFIED = 0;
+  METADATA_RESOLUTION_BASIS_EFFECTIVE_INTERVAL = 1;
+  METADATA_RESOLUTION_BASIS_KNOWLEDGE_ONLY = 2;
+}
 
 message InstrumentMetadataVersion {
   optional string instrument_id = 1;
@@ -17,4 +31,16 @@ message InstrumentMetadataVersion {
   optional string product_type = 12;
   optional string margin_asset = 13;
   optional string settlement_asset = 14;
+  optional EffectiveTimeBasis effective_time_basis = 15;
+  optional string venue = 16;
+  optional string product_family = 17;
+  optional string symbol = 18;
+  optional string pair = 19;
+  optional string contract_type = 20;
+  optional string base_asset = 21;
+  optional string quote_asset = 22;
+  optional string venue_status = 23;
+  HttpSourceContext source = 24;
+  DecimalValue minimum_quantity = 25;
+  DecimalValue maximum_quantity = 26;
 }

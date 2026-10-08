@@ -1,0 +1,71 @@
+syntax = "proto3";
+package bqip.v1;
+import "bqip/v1/common.proto";
+import "bqip/v1/source.proto";
+
+enum TradeGranularity {
+  TRADE_GRANULARITY_UNKNOWN = 0;
+  TRADE_GRANULARITY_INDIVIDUAL = 1;
+  TRADE_GRANULARITY_AGGREGATED = 2;
+}
+enum AggressorSide {
+  AGGRESSOR_SIDE_UNKNOWN = 0;
+  AGGRESSOR_SIDE_BUY = 1;
+  AGGRESSOR_SIDE_SELL = 2;
+}
+enum LiquidationObservation {
+  LIQUIDATION_OBSERVATION_UNKNOWN = 0;
+  LIQUIDATION_OBSERVATION_NOT_OBSERVED_FROM_THIS_SOURCE = 1;
+}
+
+message TradeEvent {
+  optional string instrument_id = 1;
+  optional string venue_event_id = 2;
+  optional bytes logical_event_id = 3;
+  DecimalValue price = 4;
+  DecimalValue quantity = 5;
+  optional int64 event_timestamp_ns = 6;
+  optional int64 trade_timestamp_ns = 7;
+  optional uint64 native_event_time_ms = 8;
+  optional uint64 native_trade_time_ms = 9;
+  optional AggressorSide aggressor = 10;
+  optional TradeGranularity granularity = 11;
+  optional uint64 aggregate_id = 12;
+  optional uint64 first_venue_trade_id = 13;
+  optional uint64 last_venue_trade_id = 14;
+  DecimalValue quantity_ex_rpi = 15;
+  optional bool buyer_is_maker = 16;
+  optional LiquidationObservation liquidation = 17;
+  StreamSourceContext source = 18;
+}
+
+message PriceLevel {
+  DecimalValue price = 1;
+  DecimalValue quantity = 2; // Absolute quantity. Zero deletes.
+}
+
+// Native sequencing contract; this is not a Book Service.
+message BinanceDepthUpdate {
+  optional uint64 first_update_id = 1;
+  optional uint64 final_update_id = 2;
+  optional uint64 previous_final_update_id = 3;
+  optional uint64 native_event_time_ms = 4;
+  optional uint64 native_transaction_time_ms = 5;
+  optional int64 event_timestamp_ns = 6;
+  optional int64 transaction_timestamp_ns = 7;
+  repeated PriceLevel bids = 8;
+  repeated PriceLevel asks = 9;
+  optional bytes logical_event_id = 10;
+  StreamSourceContext source = 11;
+}
+
+message BinanceDepthSnapshot {
+  optional uint64 last_update_id = 1;
+  optional uint64 native_event_time_ms = 2;
+  optional uint64 native_transaction_time_ms = 3;
+  optional int64 event_timestamp_ns = 4;
+  optional int64 transaction_timestamp_ns = 5;
+  repeated PriceLevel bids = 6;
+  repeated PriceLevel asks = 7;
+  HttpSourceContext source = 8;
+}

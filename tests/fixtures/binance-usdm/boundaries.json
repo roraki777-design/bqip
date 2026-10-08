@@ -1,0 +1,44 @@
+[
+  {
+    "name": "u-S-minus-one",
+    "U": 98,
+    "u": 99,
+    "S": 100,
+    "state": "BRIDGING"
+  },
+  {
+    "name": "u-equals-S",
+    "U": 98,
+    "u": 100,
+    "S": 100,
+    "state": "HEALTHY"
+  },
+  {
+    "name": "U-and-u-equal-S",
+    "U": 100,
+    "u": 100,
+    "S": 100,
+    "state": "HEALTHY"
+  },
+  {
+    "name": "U-less-u-greater",
+    "U": 98,
+    "u": 102,
+    "S": 100,
+    "state": "HEALTHY"
+  },
+  {
+    "name": "U-equals-u-greater",
+    "U": 100,
+    "u": 102,
+    "S": 100,
+    "state": "HEALTHY"
+  },
+  {
+    "name": "U-after-S",
+    "U": 101,
+    "u": 102,
+    "S": 100,
+    "state": "BRIDGING"
+  }
+]

@@ -1,0 +1,552 @@
+BQIP — IMPLEMENTATION BRIEF #002 FULL RECOVERY REBUILD
+
+STATUS
+
+The original Brief #002 candidate implementation artifacts were lost before
+the Architecture Lead could independently inspect the source.
+
+The previous candidate commit was:
+
+bae55a689085fadac0f0ca98420b4e8088e3eec4
+
+Its validation report and evidence survived, but the authoritative source ZIP
+and Git review bundle are unavailable.
+
+Therefore:
+
+DO NOT claim the old commit has been recovered.
+DO NOT recreate or spoof its SHA.
+DO NOT treat the old candidate as architect-accepted.
+DO NOT begin Brief #003.
+
+We will rebuild Brief #002 cleanly from the accepted Foundation baseline.
+
+============================================================
+1. AUTHORITATIVE FOUNDATION
+============================================================
+
+Repository:
+
+https://github.com/roraki777-design/bqip.git
+
+Accepted Foundation commit:
+
+c7deed5b17c9bb0dbc50622e3c3ef565907c92d7
+
+Implementation Brief #001:
+
+ACCEPTED / CLOSED
+
+Start the recovery implementation from exactly:
+
+c7deed5b17c9bb0dbc50622e3c3ef565907c92d7
+
+Use a clean `brief-002` recovery branch or recreate `brief-002` from this
+baseline.
+
+Do not rewrite Foundation history.
+
+============================================================
+2. AUTHORITATIVE SPECIFICATION SET
+============================================================
+
+Reapply in full:
+
+A. IMPLEMENTATION BRIEF #002
+   Binance BTCUSDT USDⓈ-M Perpetual
+   Venue Profile & Golden Market-Data Contracts
+
+B. ARCHITECT DECISION DIRECTIVE #002-A
+   Resolution of:
+   - B2-01 temporal metadata with unknown effective_from
+   - B2-02 session-scoped depth logical identity
+
+These two documents remain fully authoritative.
+
+Do not reinterpret or simplify them.
+
+============================================================
+3. REQUIRED IMPLEMENTATION SCOPE
+============================================================
+
+Rebuild all Brief #002 deliverables including:
+
+- BinanceUsdMVenueProfile v1
+- ExchangeInfo parser and validation
+- InstrumentMetadataVersion additive extension
+- EffectiveTimeBasis
+- AS_LIVED / CORRECTED_RESEARCH behavior
+- typed HTTP source context
+- source/profile/raw lineage
+- ADR-003 additive amendment
+- minimal canonical TradeEvent
+- ADR-015 canonical trade source granularity
+- aggTrade q/nq/a/f/l/m semantics
+- aggressor derivation
+- RPI semantics
+- liquidation source semantics
+- diff-depth U/u/pu semantics
+- REST depth snapshot contract
+- snapshot bridge state machine
+- session-scoped depth logical identity
+- VENUE_IDENTITY_CONFLICT
+- aggTrade identity without session_id
+- golden fixtures
+- property tests
+- state-machine tests
+- Rust/Python parity
+- documentation source manifest
+- Foundation regression tests
+
+No networking runtime.
+
+No WebSocket client.
+
+No HTTP client runtime.
+
+No Tokio.
+
+No reqwest.
+
+No NATS.
+
+No S3.
+
+No Brief #003 work.
+
+============================================================
+4. PRESERVE ALL ARCHITECT DECISIONS
+============================================================
+
+B2-01 remains:
+
+UNKNOWN effective start is represented explicitly.
+
+Do not invent:
+
+- receive time
+- onboardDate
+- zero
+- process start
+
+as effective_from.
+
+AS_LIVED may resolve UNKNOWN metadata by knowledge interval and must label it:
+
+KNOWLEDGE_ONLY
+METADATA_EFFECTIVE_TIME_UNKNOWN
+
+CORRECTED_RESEARCH must fail closed when no known-effective interval exists.
+
+Later confirmation appends a new version; never mutate the old observation.
+
+B2-02 remains:
+
+Depth logical identity is SESSION-SCOPED.
+
+Use:
+
+BINANCE
+USD_M_FUTURES
+BTCUSDT
+DEPTH_UPDATE
+<original_session_id>
+<U>
+<u>
+
+Replay preserves the original session_id.
+
+Same U/u in different sessions => different logical ID.
+
+Same session/U/u with incompatible semantic content =>
+VENUE_IDENTITY_CONFLICT.
+
+Do not include pu, timestamps, levels, quantities, or payload hash in the
+logical ID.
+
+AggTrade identity remains:
+
+BINANCE
+USD_M_FUTURES
+BTCUSDT
+AGG_TRADE
+<a>
+
+No session_id.
+
+============================================================
+5. BINANCE SEMANTIC CONTRACT REMAINS FROZEN
+============================================================
+
+Keep the original Brief #002 rules including:
+
+PUBLIC route for diff depth.
+
+MARKET route for aggTrade.
+
+Depth:
+
+btcusdt@depth@100ms
+
+AggTrade:
+
+btcusdt@aggTrade
+
+Snapshot:
+
+GET /fapi/v1/depth
+symbol=BTCUSDT
+limit=1000
+
+ExchangeInfo:
+
+GET /fapi/v1/exchangeInfo
+
+Book bridge:
+
+drop u < S
+
+bridge:
+
+U <= S <= u
+
+continuation:
+
+current.pu == previous.u
+
+quantity is absolute.
+
+quantity == 0 removes level.
+
+pu mismatch =>
+DEGRADED
+RESYNC_REQUIRED
+
+AggTrade:
+
+granularity = AGGREGATED
+
+quantity = q
+
+quantity_ex_rpi = nq
+
+first_venue_trade_id = f
+
+last_venue_trade_id = l
+
+aggregate_id = a
+
+m=true => aggressor SELL
+m=false => aggressor BUY
+
+Never fabricate child fills.
+
+st=1 accepted for USDⓈ-M.
+
+st=2 rejected as product-family mismatch.
+
+============================================================
+6. FIXTURES AND TESTS
+============================================================
+
+Recreate the entire original Brief #002 fixture matrix.
+
+Do not reduce coverage.
+
+At minimum preserve all previously required categories:
+
+- ExchangeInfo
+- AggTrade
+- Diff depth
+- Snapshot bridge
+- exact bridge boundaries
+- metadata uncertainty
+- source lineage
+- depth session identity
+- identity conflicts
+- wire/protobuf parity
+- enum stability
+
+The following properties remain mandatory:
+
+- decimal parsing exact
+- no floats for canonical venue numerics
+- checked ms -> ns conversion
+- no timestamp overflow
+- tickSize never derived from pricePrecision
+- stepSize never derived from quantityPrecision
+- nq <= q
+- f <= l
+- no fabricated child trades
+- duplicate depth handling deterministic
+- absolute replacement idempotent
+- zero deletion idempotent
+- pu mismatch cannot remain HEALTHY
+- st=2 cannot enter USD_M profile
+- corrected research cannot consume unknown-effective metadata as historical
+  fact
+- replay preserves original depth session identity
+
+============================================================
+7. CLEAN REBUILD REQUIREMENT
+============================================================
+
+Do not reconstruct the implementation by copying unverifiable working-tree
+artifacts from the lost candidate unless those bytes can be independently
+validated.
+
+The goal is a fresh auditable candidate.
+
+It is acceptable and expected that the new commit SHA differs from:
+
+bae55a689085fadac0f0ca98420b4e8088e3eec4
+
+Do not force the old SHA.
+
+============================================================
+8. VALIDATION
+============================================================
+
+Run all gates from a clean checkout:
+
+cargo fmt --check
+
+cargo clippy --locked --all-targets --all-features -- -D warnings
+
+cargo test --workspace --locked
+
+Python unit tests
+
+Python protobuf tests
+
+Ruff
+
+mypy
+
+protobuf generation
+
+protobuf drift check
+
+FILES.sha256
+
+cargo-audit
+
+pip-audit
+
+gitleaks
+
+tools/readiness.py
+
+tools/checks.py
+
+Clean checkout must finish with:
+
+git status --porcelain
+
+empty.
+
+No test may require live market network access.
+
+============================================================
+9. FOUNDATION REGRESSION
+============================================================
+
+All Brief #001 tests must remain green.
+
+Foundation enum tags must not be renumbered.
+
+BQRC v2 behavior must remain unchanged unless an additive compatibility-safe
+change is explicitly required by Brief #002.
+
+Existing locks should remain unchanged unless a real dependency need is found.
+
+If any dependency change is necessary:
+
+STOP and report:
+
+DEPENDENCY APPROVAL REQUIRED
+
+============================================================
+10. NEW CANDIDATE COMMIT
+============================================================
+
+Create a NEW Brief #002 candidate commit.
+
+Report:
+
+Old lost candidate:
+
+bae55a689085fadac0f0ca98420b4e8088e3eec4
+
+New recovery candidate:
+
+<NEW FULL SHA>
+
+Do not imply equivalence of Git objects unless they are actually identical.
+
+============================================================
+11. REQUIRED DELIVERY ARTIFACTS
+============================================================
+
+This time deliver ALL of the following together:
+
+1.
+BQIP_Brief_002_Source_<NEW_SHORT_SHA>.zip
+
+2.
+BQIP_Brief_002_Review.bundle
+
+3.
+BQIP_Brief_002_Validation_Report.md
+
+4.
+BQIP_Brief_002_Validation_Evidence.zip
+
+5.
+DELIVERY.sha256
+
+The source ZIP must contain only files from the exact candidate commit.
+
+The bundle must contain:
+
+refs/heads/brief-002
+
+and allow reconstruction of the exact candidate from the accepted baseline.
+
+The evidence ZIP must contain:
+
+- clean-gates logs
+- clean environment record
+- parity evidence
+- inventory verification
+- test summaries
+- security scan evidence
+- clean status
+- validation record
+
+DELIVERY.sha256 must cover every delivered artifact.
+
+Do not omit the source ZIP or bundle.
+
+============================================================
+12. REQUIRED REPORT
+============================================================
+
+Return:
+
+BQIP IMPLEMENTATION BRIEF #002 RECOVERY VALIDATION REPORT
+
+Include:
+
+Foundation base commit:
+
+Old lost candidate:
+
+New candidate commit:
+
+Branch:
+
+Files changed:
+
+B2-01:
+RESOLVED / FAIL
+
+B2-02:
+RESOLVED / FAIL
+
+ADR-003 amendment:
+PASS / FAIL
+
+ADR-015:
+PASS / FAIL
+
+VenueProfile:
+PASS / FAIL
+
+ExchangeInfo semantics:
+PASS / FAIL
+
+Effective-time uncertainty:
+PASS / FAIL
+
+Metadata evidence lineage:
+PASS / FAIL
+
+AggTrade semantics:
+PASS / FAIL
+
+Trade granularity:
+PASS / FAIL
+
+Depth semantics:
+PASS / FAIL
+
+Depth session identity:
+PASS / FAIL
+
+VENUE_IDENTITY_CONFLICT:
+PASS / FAIL
+
+Snapshot bridge:
+PASS / FAIL
+
+Golden fixtures:
+PASS / FAIL
+
+Rust:
+fmt
+clippy
+tests
+
+Python:
+tests
+protobuf tests
+ruff
+mypy
+
+Protobuf:
+generation
+drift
+
+Foundation regression:
+PASS / FAIL
+
+Security:
+cargo-audit
+pip-audit
+gitleaks
+
+Clean checkout:
+PASS / FAIL
+
+Network runtime added:
+MUST BE NO
+
+Brief #003 work:
+MUST BE NO
+
+Definition of Done:
+PASS / FAIL
+
+List:
+
+- every assumption
+- every ambiguity
+- every official Binance semantic assertion relied upon
+- every deviation, if any, from the former candidate report
+
+============================================================
+13. COMPLETION CONDITION
+============================================================
+
+If all gates pass and ALL five delivery artifacts are attached:
+
+end exactly:
+
+IMPLEMENTATION BRIEF #002 RECOVERY CANDIDATE — AWAITING ARCHITECT REVIEW
+
+Otherwise:
+
+BRIEF #002 RECOVERY BLOCKED — AWAITING ARCHITECT DECISION
+
+Do NOT begin Brief #003.
