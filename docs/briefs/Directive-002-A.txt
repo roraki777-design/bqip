@@ -1,0 +1,603 @@
+BQIP — ARCHITECT DECISION DIRECTIVE #002-A
+RESOLUTION OF B2-01 AND B2-02
+
+STATUS
+
+The Architecture Lead has reviewed:
+
+- BQIP_Brief_002_Blocking_Decisions
+- BQIP_Brief_002_Documentation_Sources
+
+Both blockers are accepted as valid.
+
+No Architecture Conflict exists.
+
+The decisions below are authoritative for continuation of
+Implementation Brief #002.
+
+Do NOT restart Brief #002.
+Continue from the existing clean `brief-002` branch created from:
+
+c7deed5b17c9bb0dbc50622e3c3ef565907c92d7
+
+============================================================
+1. B2-01 — DECISION
+TEMPORAL METADATA WITH UNKNOWN EFFECTIVE START
+============================================================
+
+Use a compatible additive extension of the existing
+InstrumentMetadataVersion contract.
+
+Do NOT replace receive time with economic effective time.
+
+Do NOT use onboardDate as the effective start of a later filter state.
+
+Do NOT create an unrelated parallel metadata architecture.
+
+Add:
+
+EffectiveTimeBasis
+
+EFFECTIVE_TIME_BASIS_UNSPECIFIED = 0
+EFFECTIVE_TIME_BASIS_VENUE_DECLARED = 1
+EFFECTIVE_TIME_BASIS_BQIP_CONFIRMED = 2
+EFFECTIVE_TIME_BASIS_UNKNOWN = 3
+
+Existing enum tags must not be renumbered.
+
+Validation:
+
+If basis == UNKNOWN:
+
+effective_from_ns MUST be absent
+known_from_ns MUST be present
+
+If basis == VENUE_DECLARED or BQIP_CONFIRMED:
+
+effective_from_ns MUST be present
+
+UNSPECIFIED is not acceptable for a persisted validated metadata
+version.
+
+Do not synthesize effective_from_ns from:
+
+- HTTP receive time
+- onboardDate
+- zero
+- process start
+- file time
+
+============================================================
+2. METADATA RESOLUTION MODES
+============================================================
+
+Preserve the distinction:
+
+AS_LIVED
+CORRECTED_RESEARCH
+
+Add an explicit resolver result basis:
+
+MetadataResolutionBasis
+
+EFFECTIVE_INTERVAL
+KNOWLEDGE_ONLY
+
+Naming may vary minimally if required by existing conventions,
+but semantics must not.
+
+------------------------------------------------------------
+AS_LIVED
+------------------------------------------------------------
+
+A metadata version with:
+
+effective_time_basis = UNKNOWN
+
+may be eligible ONLY using its knowledge interval:
+
+event_receive_time >= known_from_ns
+
+and, if known_to exists:
+
+event_receive_time < known_to_ns
+
+It must return:
+
+resolution_basis = KNOWLEDGE_ONLY
+
+and expose a quality state equivalent to:
+
+METADATA_EFFECTIVE_TIME_UNKNOWN
+
+Meaning:
+
+BQIP knew this metadata state at that time.
+
+It does NOT mean:
+
+the venue's economic change began at known_from_ns.
+
+If two unrelated UNKNOWN observations are simultaneously eligible
+because the knowledge intervals overlap incorrectly:
+
+return ambiguity error.
+
+Do not guess.
+
+------------------------------------------------------------
+CORRECTED_RESEARCH
+------------------------------------------------------------
+
+An UNKNOWN-effective version is NOT sufficient to establish
+historical economic applicability before/independent of its known
+time.
+
+CORRECTED_RESEARCH must prefer metadata versions with a known
+effective interval.
+
+If no known-effective version covers the requested event time and
+only UNKNOWN-effective evidence exists:
+
+return:
+
+METADATA_EFFECTIVE_TIME_UNKNOWN
+
+Do not project the observation backward.
+
+Do not silently fall back to AS_LIVED behavior.
+
+============================================================
+3. LATER CONFIRMATION / CORRECTION
+============================================================
+
+Historical metadata records remain immutable.
+
+If later evidence establishes an effective start:
+
+append a NEW metadata_version.
+
+Example semantics:
+
+previous version:
+effective_time_basis = UNKNOWN
+
+new version:
+effective_time_basis =
+  VENUE_DECLARED
+or
+  BQIP_CONFIRMED
+
+effective_from_ns = confirmed value
+supersedes_version = prior version
+
+The prior observation remains preserved.
+
+Do not rewrite its effective_from field.
+
+This permits:
+
+- forensic replay to reconstruct what BQIP knew;
+- corrected research to use later-confirmed historical applicability.
+
+============================================================
+4. METADATA SOURCE / PROFILE TRACEABILITY
+============================================================
+
+Authorize additive typed fields/contracts sufficient to bind each
+metadata version to its instrument/profile and original exchangeInfo
+evidence.
+
+Every persisted Binance metadata version must be able to resolve:
+
+venue_profile_id
+
+venue
+product_family
+
+symbol
+pair
+contract_type
+
+base_asset
+quote_asset
+margin_asset
+
+venue_status
+
+source_capture_id
+source_raw_content_hash
+
+source_transport = HTTP_REST
+
+source_endpoint
+
+source_query_parameters
+
+source_http_status
+
+source_receive_timestamp_ns
+
+You may use a typed nested source-evidence message rather than placing
+every source field flat on InstrumentMetadataVersion.
+
+Prefer the cleaner typed representation.
+
+Do NOT use ProcessingContext to carry observed HTTP facts.
+
+Do NOT modify the raw body.
+
+The complete native filter set need not be duplicated into normalized
+fields if the raw capture reference and hash preserve the exact source
+body.
+
+However:
+
+the normalized values actually used by BQIP must remain explicit,
+including tick_size / step_size and relevant validated instrument
+semantics.
+
+============================================================
+5. HTTP SOURCE CONTEXT
+============================================================
+
+Brief #002 is authorized to define the minimum typed HTTP/REST source
+context required by the metadata and snapshot contracts.
+
+This is a CONTRACT ONLY.
+
+No HTTP runtime.
+
+No reqwest.
+
+No Tokio.
+
+No network loop.
+
+It must preserve at minimum:
+
+method
+endpoint
+canonical query parameters
+HTTP status
+receive_timestamp_ns
+capture_id
+raw_content_hash
+
+Sensitive headers/credentials are out of scope.
+
+============================================================
+6. ADR-003 UPDATE
+============================================================
+
+Update ADR-003 additively.
+
+Do not rewrite its historical rationale.
+
+Record:
+
+- effective economic time and knowledge time are distinct;
+- effective start may be unknown;
+- UNKNOWN is explicitly represented rather than fabricated;
+- AS_LIVED may resolve by knowledge interval and labels that result;
+- CORRECTED_RESEARCH fails closed when economic applicability cannot
+  be established;
+- later confirmation appends a new version rather than mutating old
+  evidence.
+
+ADR-003 remains traceable to the accepted Foundation history.
+
+Do not renumber the ADR.
+
+============================================================
+7. B2-02 — DECISION
+DEPTH LOGICAL IDENTITY
+============================================================
+
+Depth logical identity is SESSION-SCOPED.
+
+Use BQIP-ID-V1 with the ordered semantic components:
+
+BINANCE
+USD_M_FUTURES
+BTCUSDT
+DEPTH_UPDATE
+<original_session_id>
+<U>
+<u>
+
+The exact component labels must follow the Foundation BQIP-ID-V1
+canonical preimage rules.
+
+session_id is the ORIGINAL CAPTURE SESSION / CONTINUITY EPOCH.
+
+It is NOT regenerated during replay.
+
+Replay must preserve the original session_id from lineage.
+
+A new reconnect / continuity epoch receives a new session_id according
+to the existing Foundation session semantics.
+
+============================================================
+8. CROSS-SESSION SEMANTICS
+============================================================
+
+Same:
+
+U
+u
+
+observed in DIFFERENT original sessions:
+
+=> different logical_event_id
+
+BQIP makes NO cross-session deduplication guarantee for native Binance
+depth events.
+
+Do not claim that Binance guarantees U/u global uniqueness beyond what
+the official documentation states.
+
+Cross-session economic reconciliation, if ever required, belongs to a
+future derived layer and is NOT part of Brief #002.
+
+============================================================
+9. FIELDS NOT IN DEPTH LOGICAL ID
+============================================================
+
+Do NOT include:
+
+pu
+event timestamp
+transaction timestamp
+price levels
+quantities
+raw payload hash
+
+inside the logical identity recipe.
+
+They are content/provenance/continuity data, not identity components.
+
+Reason:
+
+If within the SAME original session BQIP observes:
+
+same U
+same u
+
+but incompatible:
+
+pu
+or payload semantics
+
+it must not manufacture a second valid logical event.
+
+It must surface an identity/content conflict.
+
+Define an additive error/quality condition equivalent to:
+
+VENUE_IDENTITY_CONFLICT
+
+Use existing error-contract conventions and preserve old enum tags.
+
+This conflict is separate from:
+
+VENUE_GAP
+
+Example:
+
+same session_id/U/u
+same semantic payload
+=> duplicate/re-observation policy
+
+same session_id/U/u
+different semantic payload
+=> VENUE_IDENTITY_CONFLICT
+
+Do not silently choose one.
+
+============================================================
+10. AGGTRADE IDENTITY
+============================================================
+
+No change.
+
+Freeze:
+
+venue_event_id = Binance aggregate trade ID `a`
+
+logical BQIP-ID-V1 namespace:
+
+BINANCE
+USD_M_FUTURES
+BTCUSDT
+AGG_TRADE
+<a>
+
+Do NOT add session_id to aggTrade identity.
+
+Do NOT use price, quantity or timestamp when the venue already supplies
+the aggregate ID.
+
+Do NOT fabricate individual child trade identities from f..l.
+
+============================================================
+11. DOCUMENTATION SOURCE MANIFEST
+============================================================
+
+The supplied Brief #002 documentation-source manifest is accepted as
+REVIEW EVIDENCE.
+
+In the implemented Brief #002 repository, create the normative source
+manifest required by the original brief using the verified official
+Binance sources and semantic assertions.
+
+Preserve:
+
+retrieval date = 2026-10-03
+
+Do not hash Binance HTML.
+
+Do not implement runtime documentation scraping.
+
+If an official Binance page changes during implementation and creates a
+semantic conflict with these decisions:
+
+STOP and report:
+
+DOCUMENTATION CONFLICT
+
+============================================================
+12. IMPLEMENTATION AUTHORIZATION
+============================================================
+
+B2-01: RESOLVED
+B2-02: RESOLVED
+
+You are authorized to continue Implementation Brief #002.
+
+Implement all originally required #002 deliverables including:
+
+- BinanceUsdMVenueProfile v1
+- ExchangeInfo parser/validation
+- temporal metadata extension above
+- HTTP source-context contract
+- minimal canonical TradeEvent
+- ADR-015
+- aggTrade semantics
+- depth semantics
+- REST snapshot contract
+- book synchronization state machine
+- BQIP-ID-V1 venue recipes
+- golden fixtures
+- property/state-machine tests
+- Rust/Python parity where normative
+- documentation source manifest
+
+No networking runtime.
+
+============================================================
+13. REQUIRED NEW METADATA TESTS
+============================================================
+
+At minimum add external/golden cases for:
+
+1. UNKNOWN effective basis with absent effective_from -> accepted
+
+2. UNKNOWN effective basis with effective_from present -> rejected
+
+3. KNOWN basis with missing effective_from -> rejected
+
+4. AS_LIVED:
+   unknown-effective observation before known_from -> not eligible
+
+5. AS_LIVED:
+   event_receive_time == known_from -> eligible
+
+6. AS_LIVED:
+   unknown-effective observation returns KNOWLEDGE_ONLY
+
+7. CORRECTED_RESEARCH:
+   only unknown-effective evidence -> METADATA_EFFECTIVE_TIME_UNKNOWN
+
+8. later confirmed metadata appended -> corrected research resolves
+   confirmed version
+
+9. forensic/as-lived replay still resolves prior knowledge state
+
+10. ambiguous overlapping knowledge-only observations -> visible error
+
+11. raw/profile/source evidence survives Rust/Python round trip
+
+12. onboardDate is NOT automatically mapped to effective_from
+
+============================================================
+14. REQUIRED DEPTH IDENTITY TESTS
+============================================================
+
+At minimum:
+
+1. same session + same U/u -> same logical ID
+
+2. same U/u + different session -> different logical ID
+
+3. replay with preserved original session -> same logical ID
+
+4. same session/U/u + different pu -> identity conflict
+
+5. same session/U/u + changed level payload -> identity conflict
+
+6. `pu` change does not change the logical ID itself
+
+7. payload hash change does not change logical ID itself
+
+8. session generated anew by replay is forbidden by contract/tests
+
+9. aggTrade same `a` across capture sessions -> same aggTrade logical ID
+
+============================================================
+15. EXISTING ORIGINAL BRIEF #002 REMAINS ACTIVE
+============================================================
+
+All other requirements of Implementation Brief #002 remain unchanged.
+
+Do NOT reduce the original fixture matrix.
+
+Do NOT skip:
+
+- st UM/CM validation
+- RPI semantics
+- q / nq
+- f / l
+- maker/aggressor semantics
+- U/u/pu
+- snapshot bridge boundaries
+- absolute quantities
+- filter semantics
+- tickSize vs pricePrecision
+- stepSize vs quantityPrecision
+- timestamp checked conversion
+- source/profile documentation
+- Foundation regression
+
+============================================================
+16. COMPLETION REPORT
+============================================================
+
+When finished return:
+
+BQIP IMPLEMENTATION BRIEF #002 VALIDATION REPORT
+
+Include additionally:
+
+B2-01:
+RESOLVED / FAIL
+
+B2-02:
+RESOLVED / FAIL
+
+ADR-003 amendment:
+PASS / FAIL
+
+Effective-time uncertainty:
+PASS / FAIL
+
+Metadata evidence lineage:
+PASS / FAIL
+
+Depth session-scoped identity:
+PASS / FAIL
+
+VENUE_IDENTITY_CONFLICT:
+PASS / FAIL
+
+Then all original Brief #002 report fields.
+
+If every DoD item passes:
+
+IMPLEMENTATION BRIEF #002 COMPLETE — AWAITING ARCHITECT REVIEW
+
+Otherwise:
+
+BRIEF #002 BLOCKED — AWAITING ARCHITECT DECISION
+
+Do NOT begin Brief #003.

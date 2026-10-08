@@ -1,0 +1,40 @@
+syntax = "proto3";
+package bqip.v1;
+import "bqip/v1/common.proto";
+
+enum SourceTransport {
+  SOURCE_TRANSPORT_UNSPECIFIED = 0;
+  SOURCE_TRANSPORT_HTTP_REST = 1;
+  SOURCE_TRANSPORT_WEBSOCKET = 2;
+}
+
+message SourceLineage {
+  optional string venue_profile_id = 1;
+  optional bytes venue_profile_hash = 2;
+  CaptureId capture_id = 3;
+  optional bytes raw_content_hash = 4;
+  optional int64 receive_timestamp_ns = 5;
+}
+
+// Decoded parameters, unique ASCII names in ascending byte order.
+message QueryParameter {
+  optional string name = 1;
+  optional string value = 2;
+}
+
+message HttpSourceContext {
+  SourceLineage lineage = 1;
+  optional SourceTransport transport = 2;
+  optional string method = 3;
+  optional string endpoint = 4;
+  repeated QueryParameter query_parameters = 5;
+  optional uint32 http_status = 6;
+}
+
+message StreamSourceContext {
+  SourceLineage lineage = 1;
+  optional SourceTransport transport = 2;
+  optional string endpoint = 3;
+  optional string channel = 4;
+  optional bytes original_session_id = 5; // Original 16 UUID bytes, never replay-generated.
+}

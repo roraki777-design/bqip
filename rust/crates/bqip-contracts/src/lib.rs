@@ -1,5 +1,6 @@
 //! AC-001 contract kernel. Normative types are generated from proto/bqip/v1.
 
+pub mod binance;
 pub mod decimal;
 pub mod identity;
 pub mod manifests;

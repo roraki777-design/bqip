@@ -1,0 +1,124 @@
+{
+  "manifest_id": "BQIP-BINANCE-USDM-PROFILE-V1-SOURCES",
+  "status": "NORMATIVE_SEMANTIC_ASSERTIONS_FOR_ARCHITECT_REVIEW",
+  "retrieval_date": "2026-10-03",
+  "accepted_base_commit": "c7deed5b17c9bb0dbc50622e3c3ef565907c92d7",
+  "runtime_retrieval": false,
+  "html_hash_used": false,
+  "sources": [
+    {
+      "source_id": "D01",
+      "document_title": "Futures USDⓈ-M — WebSocket Market Streams — Connect",
+      "url": "https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/Connect",
+      "retrieval_date": "2026-10-03",
+      "semantic_area": "Transport profile",
+      "semantic_assertions": [
+        "Use routed PUBLIC/MARKET/PRIVATE bases.",
+        "Symbols are lowercase; raw ws and combined stream access exist.",
+        "Connection lifetime is 24h; server ping interval 3min; pong timeout 10min.",
+        "Limit: 10 incoming messages/s and 1024 streams/connection."
+      ]
+    },
+    {
+      "source_id": "D02",
+      "document_title": "Important WebSocket Change Notice — Base URL Split & Migration",
+      "url": "https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/Important-WebSocket-Change-Notice",
+      "retrieval_date": "2026-10-03",
+      "semantic_area": "Routing",
+      "semantic_assertions": [
+        "Diff depth belongs to PUBLIC; aggregate trades belong to MARKET.",
+        "Use explicit routed paths; separate connections by traffic type."
+      ]
+    },
+    {
+      "source_id": "D03",
+      "document_title": "Public — Futures USDⓈ-M WebSocket Market Streams / Diff. Book Depth Streams",
+      "url": "https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/ws-streams/public",
+      "retrieval_date": "2026-10-03",
+      "semantic_area": "Native depth",
+      "semantic_assertions": [
+        "100ms depth route is /public/ws/{symbol}@depth@100ms.",
+        "U/u are first/final update IDs; pu is previous event final update ID.",
+        "E/T denote event/transaction time; b/a are bid/ask price-quantity levels.",
+        "Migration fields: st=1 UM, st=2 CM; ps denotes pair.",
+        "Ordinary depth excludes RPI orders."
+      ]
+    },
+    {
+      "source_id": "D04",
+      "document_title": "Market — Futures USDⓈ-M WebSocket Market Streams / Aggregate Trade Streams",
+      "url": "https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/ws-streams/market",
+      "retrieval_date": "2026-10-03",
+      "semantic_area": "Native aggregate trades",
+      "semantic_assertions": [
+        "Route /market/ws/{symbol}@aggTrade.",
+        "Aggregate same-price/same-taking-side fills at 100ms intervals.",
+        "Insurance-fund and ADL trades are excluded.",
+        "a is aggregate ID; f/l first/last trade IDs; E/T event/trade times; m is buyer-maker flag.",
+        "q includes RPI; nq excludes RPI; individual RPI membership is not tagged.",
+        "Migration st: 1=UM, 2=CM."
+      ]
+    },
+    {
+      "source_id": "D05",
+      "document_title": "How to manage a local order book correctly",
+      "url": "https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/websocket-market-streams/How-to-manage-a-local-order-book-correctly",
+      "retrieval_date": "2026-10-03",
+      "semantic_area": "Snapshot bridging and continuity",
+      "semantic_assertions": [
+        "Buffer depth before snapshot; snapshot request limit=1000.",
+        "Drop u<S; first applied event satisfies U<=S<=u.",
+        "Later pu must equal prior u; mismatch restarts synchronization.",
+        "Level quantities are absolute; zero removes; deleting an absent level is normal."
+      ]
+    },
+    {
+      "source_id": "D06",
+      "document_title": "Market Data — Futures USDⓈ-M REST API / Exchange Information",
+      "url": "https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/rest-api/market-data",
+      "retrieval_date": "2026-10-03",
+      "semantic_area": "Instrument evidence",
+      "semantic_assertions": [
+        "GET /fapi/v1/exchangeInfo returns current rules and symbols.",
+        "Preserve status, symbol/assets and filters.",
+        "pricePrecision is not tickSize; quantityPrecision is not stepSize."
+      ]
+    },
+    {
+      "source_id": "D07",
+      "document_title": "Market Data — Futures USDⓈ-M REST API / Order Book",
+      "url": "https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/rest-api/market-data",
+      "retrieval_date": "2026-10-03",
+      "semantic_area": "REST snapshot",
+      "semantic_assertions": [
+        "GET /fapi/v1/depth accepts limit up to 1000.",
+        "Response includes lastUpdateId,E,T,bids,asks with price-quantity pairs.",
+        "Ordinary snapshot excludes RPI."
+      ]
+    },
+    {
+      "source_id": "D08",
+      "document_title": "Market Data — Futures USDⓈ-M REST API / Recent Trades List",
+      "url": "https://developers.binance.com/en/docs/catalog/core-trading-derivatives-trading-usd-s-m-futures/api/rest-api/market-data",
+      "retrieval_date": "2026-10-03",
+      "semantic_area": "Source-granularity context",
+      "semantic_assertions": [
+        "GET /fapi/v1/trades returns individual market trade records.",
+        "Insurance-fund and ADL trades are excluded.",
+        "Response fields include isBuyerMaker and isRPITrade."
+      ]
+    },
+    {
+      "source_id": "D09",
+      "document_title": "Public Endpoints Info / Filters",
+      "url": "https://developers.binance.com/en/docs/products/derivatives-trading-usds-futures/common-definition",
+      "retrieval_date": "2026-10-03",
+      "semantic_area": "Quantity/price filters",
+      "semantic_assertions": [
+        "PRICE_FILTER supplies tickSize.",
+        "LOT_SIZE defines symbol quantity increments/bounds; MARKET_LOT_SIZE applies to MARKET orders."
+      ]
+    }
+  ],
+  "rechecked_date": "2026-10-08"
+}

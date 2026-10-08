@@ -109,3 +109,11 @@ and the accompanying validation evidence. ADR-001/002/003/008 remain
 Master Architecture PDF SHA-256:
 `bd0496d108018730662ceed48735b4c1114589f735202ff422372b56cb559eb3`.
 AC-001, Brief #001 and Completion Directive #001-A define this implementation.
+
+## Brief 002 recovery candidate
+
+Offline Binance BTCUSDT USD-M venue contracts, temporal evidence, aggregate trades,
+depth identities and snapshot synchronization are documented in
+[the venue profile](docs/venues/binance-usdm/README.md). The accepted Foundation
+baseline is preserved. This recovery does not restore the lost candidate Git
+object and does not begin Brief 003. ADR acceptance remains with the Architect.

@@ -1,0 +1,855 @@
+[
+  {
+    "name": "exchange-valid",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-valid.json",
+    "expected": {
+      "effective_time_basis": "UNKNOWN",
+      "effective_from_ns": null,
+      "known_from_ns": 5000000,
+      "tick_size": {
+        "coefficient": "1",
+        "scale": 1
+      },
+      "lot_size": {
+        "coefficient": "1",
+        "scale": 3
+      },
+      "venue_status": "TRADING",
+      "quantity_unit": "BTC",
+      "minimum_quantity": {
+        "coefficient": "1",
+        "scale": 3
+      },
+      "maximum_quantity": {
+        "coefficient": "100",
+        "scale": 0
+      }
+    },
+    "raw_sha256": "00c89d18ac82633fc529154f88acf3a26f7da420267869e4481d3ab7051f7e25"
+  },
+  {
+    "name": "exchange-wrong-contractType",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-wrong-contractType.json",
+    "error": "PROFILE_MISMATCH",
+    "raw_sha256": "9ed9e710ee92d4465aa05333cca1177bef282d97532b58b2b2b47ce40d744012"
+  },
+  {
+    "name": "exchange-wrong-marginAsset",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-wrong-marginAsset.json",
+    "error": "PROFILE_MISMATCH",
+    "raw_sha256": "3229ab6f04b7048e15e24ceeeacf54073ca0b50f358cb3519a6b4f96d92d2ccd"
+  },
+  {
+    "name": "exchange-wrong-pair",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-wrong-pair.json",
+    "error": "PROFILE_MISMATCH",
+    "raw_sha256": "c99b5a5c60eb15d5fdc02e1e2acd773f1dd9dcc1aae2503d44f27f8479f784a9"
+  },
+  {
+    "name": "exchange-wrong-baseAsset",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-wrong-baseAsset.json",
+    "error": "PROFILE_MISMATCH",
+    "raw_sha256": "72a8c39f37a4136623892dc3cb0c70396c7a82642037714f0095fb37f1d1e977"
+  },
+  {
+    "name": "exchange-wrong-quoteAsset",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-wrong-quoteAsset.json",
+    "error": "PROFILE_MISMATCH",
+    "raw_sha256": "eddfd5697c337c707e7dd233be6ab044290806731484ad93477add3d9c8607fc"
+  },
+  {
+    "name": "exchange-halt",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-halt.json",
+    "expected": {
+      "effective_time_basis": "UNKNOWN",
+      "effective_from_ns": null,
+      "known_from_ns": 5000000,
+      "tick_size": {
+        "coefficient": "1",
+        "scale": 1
+      },
+      "lot_size": {
+        "coefficient": "1",
+        "scale": 3
+      },
+      "venue_status": "HALT",
+      "quantity_unit": "BTC",
+      "minimum_quantity": {
+        "coefficient": "1",
+        "scale": 3
+      },
+      "maximum_quantity": {
+        "coefficient": "100",
+        "scale": 0
+      }
+    },
+    "raw_sha256": "cadf5d41f7f7a89d4179f2234778424f733f8117cbbff5671aee240383bb4a07"
+  },
+  {
+    "name": "exchange-price-precision",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-price-precision.json",
+    "expected": {
+      "effective_time_basis": "UNKNOWN",
+      "effective_from_ns": null,
+      "known_from_ns": 5000000,
+      "tick_size": {
+        "coefficient": "1",
+        "scale": 1
+      },
+      "lot_size": {
+        "coefficient": "1",
+        "scale": 3
+      },
+      "venue_status": "TRADING",
+      "quantity_unit": "BTC",
+      "minimum_quantity": {
+        "coefficient": "1",
+        "scale": 3
+      },
+      "maximum_quantity": {
+        "coefficient": "100",
+        "scale": 0
+      }
+    },
+    "raw_sha256": "2b8321521916d3baa296017743dbcad3820afbbe8bc3ca0f309f250537745b96"
+  },
+  {
+    "name": "exchange-quantity-precision",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-quantity-precision.json",
+    "expected": {
+      "effective_time_basis": "UNKNOWN",
+      "effective_from_ns": null,
+      "known_from_ns": 5000000,
+      "tick_size": {
+        "coefficient": "1",
+        "scale": 1
+      },
+      "lot_size": {
+        "coefficient": "1",
+        "scale": 3
+      },
+      "venue_status": "TRADING",
+      "quantity_unit": "BTC",
+      "minimum_quantity": {
+        "coefficient": "1",
+        "scale": 3
+      },
+      "maximum_quantity": {
+        "coefficient": "100",
+        "scale": 0
+      }
+    },
+    "raw_sha256": "ebd0c7ed5b9e8d01a7a5f8f4f2663340444defe05748a8a65f4ad6d38b1fcde4"
+  },
+  {
+    "name": "exchange-missing-price",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-missing-price.json",
+    "error": "METADATA_INCOMPLETE",
+    "raw_sha256": "159a95f33e7f8a3f5aeb1480acf4496d19438c56891ea9ef08f3ff58ccc5e164"
+  },
+  {
+    "name": "exchange-missing-lot",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-missing-lot.json",
+    "error": "METADATA_INCOMPLETE",
+    "raw_sha256": "16b755343ae0807fe6d846ae1fd49fb74fa56548dc774cc2664ad26c23881d9d"
+  },
+  {
+    "name": "exchange-onboard-not-effective",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-onboard-not-effective.json",
+    "expected": {
+      "effective_time_basis": "UNKNOWN",
+      "effective_from_ns": null,
+      "known_from_ns": 5000000,
+      "tick_size": {
+        "coefficient": "1",
+        "scale": 1
+      },
+      "lot_size": {
+        "coefficient": "1",
+        "scale": 3
+      },
+      "venue_status": "TRADING",
+      "quantity_unit": "BTC",
+      "minimum_quantity": {
+        "coefficient": "1",
+        "scale": 3
+      },
+      "maximum_quantity": {
+        "coefficient": "100",
+        "scale": 0
+      }
+    },
+    "raw_sha256": "bca67ebd5ffd69de53bb31e46fa29a9df43e7e19bb87a1c42d3be6b440fec227"
+  },
+  {
+    "name": "exchange-duplicate-filter",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-duplicate-filter.json",
+    "error": "METADATA_INCOMPLETE",
+    "raw_sha256": "269680e164b55a2c5f3339109865f84a07706952d2df3129bc2ee54c7c31b07e"
+  },
+  {
+    "name": "exchange-duplicate-symbol",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-duplicate-symbol.json",
+    "error": "METADATA_INCOMPLETE",
+    "raw_sha256": "cbc0649faeec65a89d7c0149f5def317cb53744196a03db9a4362388fb7a20db"
+  },
+  {
+    "name": "exchange-missing-status",
+    "kind": "exchange",
+    "raw_file": "raw/exchange-missing-status.json",
+    "error": "PARSE_FAILURE",
+    "raw_sha256": "8773830dfef2f45339f19c36de41b39ac6e7e85dbf118dd92dbe4a24b808da05"
+  },
+  {
+    "name": "trade-sell",
+    "kind": "trade",
+    "raw_file": "raw/trade-sell.json",
+    "expected": {
+      "price": {
+        "coefficient": "100",
+        "scale": 0
+      },
+      "quantity": {
+        "coefficient": "6",
+        "scale": 3
+      },
+      "quantity_ex_rpi": {
+        "coefficient": "4",
+        "scale": 3
+      },
+      "aggregate_id": 7,
+      "first_venue_trade_id": 10,
+      "last_venue_trade_id": 12,
+      "buyer_is_maker": true,
+      "aggressor": "SELL",
+      "granularity": "AGGREGATED",
+      "liquidation": "NOT_OBSERVED_FROM_THIS_SOURCE",
+      "event_timestamp_ns": 2000000,
+      "trade_timestamp_ns": 1000000
+    },
+    "raw_sha256": "c206f324134ccc44f3643c66278c84005d8f1bfc49b95e149504cc82bb0da7c9"
+  },
+  {
+    "name": "trade-buy",
+    "kind": "trade",
+    "raw_file": "raw/trade-buy.json",
+    "expected": {
+      "price": {
+        "coefficient": "100",
+        "scale": 0
+      },
+      "quantity": {
+        "coefficient": "6",
+        "scale": 3
+      },
+      "quantity_ex_rpi": {
+        "coefficient": "4",
+        "scale": 3
+      },
+      "aggregate_id": 7,
+      "first_venue_trade_id": 10,
+      "last_venue_trade_id": 12,
+      "buyer_is_maker": false,
+      "aggressor": "BUY",
+      "granularity": "AGGREGATED",
+      "liquidation": "NOT_OBSERVED_FROM_THIS_SOURCE",
+      "event_timestamp_ns": 2000000,
+      "trade_timestamp_ns": 1000000
+    },
+    "raw_sha256": "6aa66369306147eb1c0a78eebe5f0f5132d9cf1da24d4de0ca87ff96e31abdab"
+  },
+  {
+    "name": "trade-single-member",
+    "kind": "trade",
+    "raw_file": "raw/trade-single-member.json",
+    "expected": {
+      "price": {
+        "coefficient": "100",
+        "scale": 0
+      },
+      "quantity": {
+        "coefficient": "6",
+        "scale": 3
+      },
+      "quantity_ex_rpi": {
+        "coefficient": "4",
+        "scale": 3
+      },
+      "aggregate_id": 7,
+      "first_venue_trade_id": 10,
+      "last_venue_trade_id": 10,
+      "buyer_is_maker": true,
+      "aggressor": "SELL",
+      "granularity": "AGGREGATED",
+      "liquidation": "NOT_OBSERVED_FROM_THIS_SOURCE",
+      "event_timestamp_ns": 2000000,
+      "trade_timestamp_ns": 1000000
+    },
+    "raw_sha256": "c766cea0601caffcefd8d7f32e9c018df016d7d98a7ef683c40c336bde82dfae"
+  },
+  {
+    "name": "trade-no-rpi",
+    "kind": "trade",
+    "raw_file": "raw/trade-no-rpi.json",
+    "expected": {
+      "price": {
+        "coefficient": "100",
+        "scale": 0
+      },
+      "quantity": {
+        "coefficient": "6",
+        "scale": 3
+      },
+      "quantity_ex_rpi": {
+        "coefficient": "6",
+        "scale": 3
+      },
+      "aggregate_id": 7,
+      "first_venue_trade_id": 10,
+      "last_venue_trade_id": 12,
+      "buyer_is_maker": true,
+      "aggressor": "SELL",
+      "granularity": "AGGREGATED",
+      "liquidation": "NOT_OBSERVED_FROM_THIS_SOURCE",
+      "event_timestamp_ns": 2000000,
+      "trade_timestamp_ns": 1000000
+    },
+    "raw_sha256": "746d6bceb878613f1c470bd42fa69b3bc41c082b79a9b85f273ce20eae485cef"
+  },
+  {
+    "name": "trade-st-one",
+    "kind": "trade",
+    "raw_file": "raw/trade-st-one.json",
+    "expected": {
+      "price": {
+        "coefficient": "100",
+        "scale": 0
+      },
+      "quantity": {
+        "coefficient": "6",
+        "scale": 3
+      },
+      "quantity_ex_rpi": {
+        "coefficient": "4",
+        "scale": 3
+      },
+      "aggregate_id": 7,
+      "first_venue_trade_id": 10,
+      "last_venue_trade_id": 12,
+      "buyer_is_maker": true,
+      "aggressor": "SELL",
+      "granularity": "AGGREGATED",
+      "liquidation": "NOT_OBSERVED_FROM_THIS_SOURCE",
+      "event_timestamp_ns": 2000000,
+      "trade_timestamp_ns": 1000000
+    },
+    "raw_sha256": "c206f324134ccc44f3643c66278c84005d8f1bfc49b95e149504cc82bb0da7c9"
+  },
+  {
+    "name": "trade-st-two",
+    "kind": "trade",
+    "raw_file": "raw/trade-st-two.json",
+    "error": "PROFILE_MISMATCH",
+    "raw_sha256": "a00e0873a2086f7228c5d64263a09354f1caa0537b68874062b15e8ccd15d601"
+  },
+  {
+    "name": "trade-no-st",
+    "kind": "trade",
+    "raw_file": "raw/trade-no-st.json",
+    "expected": {
+      "price": {
+        "coefficient": "100",
+        "scale": 0
+      },
+      "quantity": {
+        "coefficient": "6",
+        "scale": 3
+      },
+      "quantity_ex_rpi": {
+        "coefficient": "4",
+        "scale": 3
+      },
+      "aggregate_id": 7,
+      "first_venue_trade_id": 10,
+      "last_venue_trade_id": 12,
+      "buyer_is_maker": true,
+      "aggressor": "SELL",
+      "granularity": "AGGREGATED",
+      "liquidation": "NOT_OBSERVED_FROM_THIS_SOURCE",
+      "event_timestamp_ns": 2000000,
+      "trade_timestamp_ns": 1000000
+    },
+    "raw_sha256": "5dd300ba4eb0aaadc907434bbc6158abb749a1e11e0e2fa88e42f75c72f53941"
+  },
+  {
+    "name": "trade-malformed-decimal",
+    "kind": "trade",
+    "raw_file": "raw/trade-malformed-decimal.json",
+    "error": "INVALID_VENUE_DECIMAL",
+    "raw_sha256": "afe28d05097e42d860295ad01ed8fc48872ba87d1d9a72fbf499465362ed3019"
+  },
+  {
+    "name": "trade-reversed-range",
+    "kind": "trade",
+    "raw_file": "raw/trade-reversed-range.json",
+    "error": "INVALID_TRADE_RANGE",
+    "raw_sha256": "de151bdc380a34c3542c6424267d6d0d1695f508f2335afcc6430c71109778d7"
+  },
+  {
+    "name": "trade-negative-quantity",
+    "kind": "trade",
+    "raw_file": "raw/trade-negative-quantity.json",
+    "error": "INVALID_VENUE_DECIMAL",
+    "raw_sha256": "16cab4268b6eed0c6beaa1bd5324ac6dfd68fa9e82a118246cdfa278824eff99"
+  },
+  {
+    "name": "trade-nq-too-large",
+    "kind": "trade",
+    "raw_file": "raw/trade-nq-too-large.json",
+    "error": "INVALID_RPI_QUANTITY",
+    "raw_sha256": "1eb8ed93290b16f3f5f7245855381279ca8161fa6b98e9bf2762f2dfa0ce853e"
+  },
+  {
+    "name": "trade-nq-zero",
+    "kind": "trade",
+    "raw_file": "raw/trade-nq-zero.json",
+    "expected": {
+      "price": {
+        "coefficient": "100",
+        "scale": 0
+      },
+      "quantity": {
+        "coefficient": "6",
+        "scale": 3
+      },
+      "quantity_ex_rpi": {
+        "coefficient": "0",
+        "scale": 0
+      },
+      "aggregate_id": 7,
+      "first_venue_trade_id": 10,
+      "last_venue_trade_id": 12,
+      "buyer_is_maker": true,
+      "aggressor": "SELL",
+      "granularity": "AGGREGATED",
+      "liquidation": "NOT_OBSERVED_FROM_THIS_SOURCE",
+      "event_timestamp_ns": 2000000,
+      "trade_timestamp_ns": 1000000
+    },
+    "raw_sha256": "11fbb98998fc4ad095e1a914102a2088f8069143806fbb1c7be6825370ae1e31"
+  },
+  {
+    "name": "trade-missing-nq",
+    "kind": "trade",
+    "raw_file": "raw/trade-missing-nq.json",
+    "error": "INVALID_VENUE_DECIMAL",
+    "raw_sha256": "e2c562be62e6f346115d528bb470b2e7c37525a138bec8994f5cd17f06cf980c"
+  },
+  {
+    "name": "trade-time-overflow",
+    "kind": "trade",
+    "raw_file": "raw/trade-time-overflow.json",
+    "error": "TIMESTAMP_OVERFLOW",
+    "raw_sha256": "9cc0c1ac510a90a64240f46a3fc52af038fbbf943d4a04430f35ee36f974d437"
+  },
+  {
+    "name": "trade-bool-id",
+    "kind": "trade",
+    "raw_file": "raw/trade-bool-id.json",
+    "error": "PARSE_FAILURE",
+    "raw_sha256": "75049cefd55902d9979693e6c6e4f735501d0f66dfcc672a1e67a0bc71d39ab7"
+  },
+  {
+    "name": "trade-float-id",
+    "kind": "trade",
+    "raw_file": "raw/trade-float-id.json",
+    "error": "PARSE_FAILURE",
+    "raw_sha256": "598f7ac3596090f336b4b9efb8e296a3e9b9de99c3560c2ac189fbb622479f9f"
+  },
+  {
+    "name": "trade-float-quantity",
+    "kind": "trade",
+    "raw_file": "raw/trade-float-quantity.json",
+    "error": "INVALID_VENUE_DECIMAL",
+    "raw_sha256": "a55920531ee1e558b5c1523ef67a82f3e0fecdfe10b1c5fd6380fa69dca7792c"
+  },
+  {
+    "name": "trade-unknown-additive",
+    "kind": "trade",
+    "raw_file": "raw/trade-unknown-additive.json",
+    "expected": {
+      "price": {
+        "coefficient": "100",
+        "scale": 0
+      },
+      "quantity": {
+        "coefficient": "6",
+        "scale": 3
+      },
+      "quantity_ex_rpi": {
+        "coefficient": "4",
+        "scale": 3
+      },
+      "aggregate_id": 7,
+      "first_venue_trade_id": 10,
+      "last_venue_trade_id": 12,
+      "buyer_is_maker": true,
+      "aggressor": "SELL",
+      "granularity": "AGGREGATED",
+      "liquidation": "NOT_OBSERVED_FROM_THIS_SOURCE",
+      "event_timestamp_ns": 2000000,
+      "trade_timestamp_ns": 1000000
+    },
+    "raw_sha256": "058b4d04d2a1fa8ba278837e0e005c4b1335f00a8e7c81859b56c59fe4b8a0f0"
+  },
+  {
+    "name": "trade-multiple-members",
+    "kind": "trade",
+    "raw_file": "raw/trade-multiple-members.json",
+    "expected": {
+      "price": {
+        "coefficient": "100",
+        "scale": 0
+      },
+      "quantity": {
+        "coefficient": "6",
+        "scale": 3
+      },
+      "quantity_ex_rpi": {
+        "coefficient": "4",
+        "scale": 3
+      },
+      "aggregate_id": 7,
+      "first_venue_trade_id": 10,
+      "last_venue_trade_id": 100,
+      "buyer_is_maker": true,
+      "aggressor": "SELL",
+      "granularity": "AGGREGATED",
+      "liquidation": "NOT_OBSERVED_FROM_THIS_SOURCE",
+      "event_timestamp_ns": 2000000,
+      "trade_timestamp_ns": 1000000
+    },
+    "raw_sha256": "f6e3352bef12da151865211b4581f989387097668f3ba1a63f653f823e63ce14"
+  },
+  {
+    "name": "depth-ordinary",
+    "kind": "depth",
+    "raw_file": "raw/depth-ordinary.json",
+    "expected": {
+      "first_update_id": 98,
+      "final_update_id": 102,
+      "previous_final_update_id": 97,
+      "bids": [
+        [
+          "100:0",
+          "2:0"
+        ]
+      ],
+      "asks": [
+        [
+          "101:0",
+          "3:0"
+        ]
+      ],
+      "event_timestamp_ns": 2000000,
+      "transaction_timestamp_ns": 1000000
+    },
+    "raw_sha256": "b2a2e8b9c9c7403ba8563979d00b5de5e717c620f1ce03661b2c1b7ce33a3904"
+  },
+  {
+    "name": "depth-several-levels",
+    "kind": "depth",
+    "raw_file": "raw/depth-several-levels.json",
+    "expected": {
+      "first_update_id": 98,
+      "final_update_id": 102,
+      "previous_final_update_id": 97,
+      "bids": [
+        [
+          "100:0",
+          "2:0"
+        ],
+        [
+          "99:0",
+          "3:0"
+        ]
+      ],
+      "asks": [
+        [
+          "101:0",
+          "3:0"
+        ]
+      ],
+      "event_timestamp_ns": 2000000,
+      "transaction_timestamp_ns": 1000000
+    },
+    "raw_sha256": "ba341c6a2e9de76ad2fea794d423a7260a67054038d340bdc04e0fd87cde8def"
+  },
+  {
+    "name": "depth-zero-delete",
+    "kind": "depth",
+    "raw_file": "raw/depth-zero-delete.json",
+    "expected": {
+      "first_update_id": 98,
+      "final_update_id": 102,
+      "previous_final_update_id": 97,
+      "bids": [
+        [
+          "100:0",
+          "0:0"
+        ]
+      ],
+      "asks": [
+        [
+          "101:0",
+          "3:0"
+        ]
+      ],
+      "event_timestamp_ns": 2000000,
+      "transaction_timestamp_ns": 1000000
+    },
+    "raw_sha256": "1bf122aeb2e08e9602ef757051c0ca078bad338e06bc9fa6d73a8dee13a311b2"
+  },
+  {
+    "name": "depth-absent-delete",
+    "kind": "depth",
+    "raw_file": "raw/depth-absent-delete.json",
+    "expected": {
+      "first_update_id": 98,
+      "final_update_id": 102,
+      "previous_final_update_id": 97,
+      "bids": [
+        [
+          "50:0",
+          "0:0"
+        ]
+      ],
+      "asks": [
+        [
+          "101:0",
+          "3:0"
+        ]
+      ],
+      "event_timestamp_ns": 2000000,
+      "transaction_timestamp_ns": 1000000
+    },
+    "raw_sha256": "63a8004a048818e9fafa0f0406c67dce180e4a134d48797da6a21da8e7f87e09"
+  },
+  {
+    "name": "depth-absolute",
+    "kind": "depth",
+    "raw_file": "raw/depth-absolute.json",
+    "expected": {
+      "first_update_id": 98,
+      "final_update_id": 102,
+      "previous_final_update_id": 97,
+      "bids": [
+        [
+          "100:0",
+          "7:0"
+        ]
+      ],
+      "asks": [
+        [
+          "101:0",
+          "3:0"
+        ]
+      ],
+      "event_timestamp_ns": 2000000,
+      "transaction_timestamp_ns": 1000000
+    },
+    "raw_sha256": "7141b0fe822cb1ef291778be633dffa407c16e1f3cdc34f4a21d851e85a8e972"
+  },
+  {
+    "name": "depth-st-one",
+    "kind": "depth",
+    "raw_file": "raw/depth-st-one.json",
+    "expected": {
+      "first_update_id": 98,
+      "final_update_id": 102,
+      "previous_final_update_id": 97,
+      "bids": [
+        [
+          "100:0",
+          "2:0"
+        ]
+      ],
+      "asks": [
+        [
+          "101:0",
+          "3:0"
+        ]
+      ],
+      "event_timestamp_ns": 2000000,
+      "transaction_timestamp_ns": 1000000
+    },
+    "raw_sha256": "b2a2e8b9c9c7403ba8563979d00b5de5e717c620f1ce03661b2c1b7ce33a3904"
+  },
+  {
+    "name": "depth-st-two",
+    "kind": "depth",
+    "raw_file": "raw/depth-st-two.json",
+    "error": "PROFILE_MISMATCH",
+    "raw_sha256": "413b2f3a24263f4e41014a0547d8b745b466abeb599e04bbecd7aa300669e1a9"
+  },
+  {
+    "name": "depth-wrong-pair",
+    "kind": "depth",
+    "raw_file": "raw/depth-wrong-pair.json",
+    "error": "PROFILE_MISMATCH",
+    "raw_sha256": "9157283d52f519e63ce091b1997cfb9d0d799c1d4c42fa6fdc10203c511eae15"
+  },
+  {
+    "name": "depth-malformed-level",
+    "kind": "depth",
+    "raw_file": "raw/depth-malformed-level.json",
+    "error": "INVALID_LEVEL",
+    "raw_sha256": "5db192209746e85d0ab3418b4034b310d960d1d6df75b54bb58ddaee6298c8e3"
+  },
+  {
+    "name": "depth-reversed-range",
+    "kind": "depth",
+    "raw_file": "raw/depth-reversed-range.json",
+    "error": "INVALID_DEPTH_RANGE",
+    "raw_sha256": "ae8b1d76bdf58e7b9ac521ba1dc7585b589707b5dcb2288dd753c2ebfca351e5"
+  },
+  {
+    "name": "depth-no-migration-fields",
+    "kind": "depth",
+    "raw_file": "raw/depth-no-migration-fields.json",
+    "expected": {
+      "first_update_id": 98,
+      "final_update_id": 102,
+      "previous_final_update_id": 97,
+      "bids": [
+        [
+          "100:0",
+          "2:0"
+        ]
+      ],
+      "asks": [
+        [
+          "101:0",
+          "3:0"
+        ]
+      ],
+      "event_timestamp_ns": 2000000,
+      "transaction_timestamp_ns": 1000000
+    },
+    "raw_sha256": "fa738b858a6d3dd88a52d1cac906f1766372c1f7fe91a3a791acd1e2d125909e"
+  },
+  {
+    "name": "depth-time-overflow",
+    "kind": "depth",
+    "raw_file": "raw/depth-time-overflow.json",
+    "error": "TIMESTAMP_OVERFLOW",
+    "raw_sha256": "e3f1715f1e76f079effc1119068e0e69cd0de62c1d8e80dfb7dfd64ae761533c"
+  },
+  {
+    "name": "depth-negative-price",
+    "kind": "depth",
+    "raw_file": "raw/depth-negative-price.json",
+    "error": "INVALID_VENUE_DECIMAL",
+    "raw_sha256": "c5ccbb28a285335831398291a06cada238dd8be68074fdab9588aba978e06ff5"
+  },
+  {
+    "name": "depth-missing-pu",
+    "kind": "depth",
+    "raw_file": "raw/depth-missing-pu.json",
+    "error": "PARSE_FAILURE",
+    "raw_sha256": "76b3fe69e32414a1d4347ef09a99d67a949d41d2104313e78fac329edcb9c28b"
+  },
+  {
+    "name": "depth-unknown-additive",
+    "kind": "depth",
+    "raw_file": "raw/depth-unknown-additive.json",
+    "expected": {
+      "first_update_id": 98,
+      "final_update_id": 102,
+      "previous_final_update_id": 97,
+      "bids": [
+        [
+          "100:0",
+          "2:0"
+        ]
+      ],
+      "asks": [
+        [
+          "101:0",
+          "3:0"
+        ]
+      ],
+      "event_timestamp_ns": 2000000,
+      "transaction_timestamp_ns": 1000000
+    },
+    "raw_sha256": "b201d29b678bbca76b828cd1d2232e2baebaa946107e504ba2b2b476db590321"
+  },
+  {
+    "name": "snapshot-valid",
+    "kind": "snapshot",
+    "raw_file": "raw/snapshot-valid.json",
+    "expected": {
+      "last_update_id": 100,
+      "bids": [
+        [
+          "100:0",
+          "1:0"
+        ],
+        [
+          "99:0",
+          "2:0"
+        ]
+      ],
+      "asks": [
+        [
+          "101:0",
+          "4:0"
+        ]
+      ],
+      "event_timestamp_ns": 2000000,
+      "transaction_timestamp_ns": 1000000
+    },
+    "raw_sha256": "f7c7a78808fe5450b4285f02ac5e9032d8ba6dc876b2480e9bcba62419333be5"
+  },
+  {
+    "name": "snapshot-empty",
+    "kind": "snapshot",
+    "raw_file": "raw/snapshot-empty.json",
+    "expected": {
+      "last_update_id": 100,
+      "bids": [],
+      "asks": [],
+      "event_timestamp_ns": 2000000,
+      "transaction_timestamp_ns": 1000000
+    },
+    "raw_sha256": "c2dcda31978df7c1064aea3d0653b9e5c9f14e54490a12559c108ebcaf283415"
+  },
+  {
+    "name": "snapshot-missing-sequence",
+    "kind": "snapshot",
+    "raw_file": "raw/snapshot-missing-sequence.json",
+    "error": "PARSE_FAILURE",
+    "raw_sha256": "40d9144e2a2aa454e52e0f3d5d0d64fd1ff49385d35b6a02017d3446efad36c5"
+  },
+  {
+    "name": "snapshot-time-overflow",
+    "kind": "snapshot",
+    "raw_file": "raw/snapshot-time-overflow.json",
+    "error": "TIMESTAMP_OVERFLOW",
+    "raw_sha256": "5ce7a9b2f7eb0444f5a285bbb8439ff8cf01ca145932a4a5a52b0f30f635096c"
+  }
+]

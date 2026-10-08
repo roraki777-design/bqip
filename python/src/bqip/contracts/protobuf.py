@@ -19,6 +19,7 @@ from bqip.contracts.operational import (
     RawLossStatus,
     RealtimeContinuity,
 )
+from bqip.contracts.source import http_from_proto
 from bqip.contracts.values import (
     U32_MAX,
     CaptureId,
@@ -31,7 +32,7 @@ from bqip.contracts.values import (
 )
 from bqip.identity import raw_hash
 from bqip.manifests import canonical_manifest, parse_manifest
-from bqip.metadata import InstrumentMetadataVersion
+from bqip.metadata import EffectiveTimeBasis, InstrumentMetadataVersion
 from bqip.v1 import capture_pb2, common_pb2, manifests_pb2, metadata_pb2, operational_pb2
 
 
@@ -70,12 +71,20 @@ def context_from_proto(message: common_pb2.ProcessingContext) -> ProcessingConte
 
 def metadata_from_proto(message: metadata_pb2.InstrumentMetadataVersion
                         ) -> InstrumentMetadataVersion:
-    _present(message, "instrument_id", "metadata_version", "effective_from_ns", "known_from_ns",
+    if not message.HasField("known_from_ns"):
+        raise ContractError("MISSING_METADATA_TIME")
+    _present(message, "instrument_id", "metadata_version", "known_from_ns",
              "product_type", "margin_asset", "settlement_asset")
+    basis = None
+    if message.HasField("effective_time_basis"):
+        try:
+            basis = EffectiveTimeBasis(message.effective_time_basis)
+        except ValueError as error:
+            raise ContractError("INVALID_EFFECTIVE_TIME_BASIS") from error
     return InstrumentMetadataVersion(
         instrument_id=message.instrument_id,
         metadata_version=message.metadata_version,
-        effective_from_ns=message.effective_from_ns,
+        effective_from_ns=message.effective_from_ns if message.HasField("effective_from_ns") else None,
         known_from_ns=message.known_from_ns,
         product_type=message.product_type,
         margin_asset=message.margin_asset,
@@ -88,6 +97,18 @@ def metadata_from_proto(message: metadata_pb2.InstrumentMetadataVersion
         quantity_unit=message.quantity_unit if message.HasField("quantity_unit") else None,
         tick_size=decimal_from_proto(message.tick_size) if message.HasField("tick_size") else None,
         lot_size=decimal_from_proto(message.lot_size) if message.HasField("lot_size") else None,
+        effective_time_basis=basis,
+        venue=message.venue if message.HasField("venue") else None,
+        product_family=message.product_family if message.HasField("product_family") else None,
+        symbol=message.symbol if message.HasField("symbol") else None,
+        pair=message.pair if message.HasField("pair") else None,
+        contract_type=message.contract_type if message.HasField("contract_type") else None,
+        base_asset=message.base_asset if message.HasField("base_asset") else None,
+        quote_asset=message.quote_asset if message.HasField("quote_asset") else None,
+        venue_status=message.venue_status if message.HasField("venue_status") else None,
+        source=http_from_proto(message.source) if message.HasField("source") else None,
+        minimum_quantity=(decimal_from_proto(message.minimum_quantity) if message.HasField("minimum_quantity") else None),
+        maximum_quantity=(decimal_from_proto(message.maximum_quantity) if message.HasField("maximum_quantity") else None),
     )
 
 

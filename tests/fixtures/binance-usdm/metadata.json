@@ -1,0 +1,356 @@
+[
+  {
+    "name": "unknown-accepted",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": 10,
+    "expected": "v1",
+    "basis": 2,
+    "quality": "METADATA_EFFECTIVE_TIME_UNKNOWN"
+  },
+  {
+    "name": "unknown-with-start",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3,
+        "effective_from_ns": 0
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": 10,
+    "error": "UNKNOWN_EFFECTIVE_START_MUST_BE_ABSENT"
+  },
+  {
+    "name": "known-without-start",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 1
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": 10,
+    "error": "MISSING_METADATA_TIME"
+  },
+  {
+    "name": "before-known",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": 9,
+    "error": "METADATA_MISSING"
+  },
+  {
+    "name": "known-boundary",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": 10,
+    "expected": "v1",
+    "basis": 2,
+    "quality": "METADATA_EFFECTIVE_TIME_UNKNOWN"
+  },
+  {
+    "name": "knowledge-only",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 1,
+    "as_of_ns": 11,
+    "expected": "v1",
+    "basis": 2,
+    "quality": "METADATA_EFFECTIVE_TIME_UNKNOWN"
+  },
+  {
+    "name": "corrected-unknown",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      }
+    ],
+    "mode": "CORRECTED_RESEARCH",
+    "event_time_ns": 6,
+    "as_of_ns": 10,
+    "error": "METADATA_EFFECTIVE_TIME_UNKNOWN"
+  },
+  {
+    "name": "corrected-confirmed",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      },
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v2",
+        "known_from_ns": 30,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 2,
+        "effective_from_ns": 5,
+        "supersedes_version": "v1"
+      }
+    ],
+    "mode": "CORRECTED_RESEARCH",
+    "event_time_ns": 6,
+    "as_of_ns": 10,
+    "expected": "v2",
+    "basis": 1,
+    "quality": null
+  },
+  {
+    "name": "forensic-prior",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      },
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v2",
+        "known_from_ns": 30,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 2,
+        "effective_from_ns": 5,
+        "supersedes_version": "v1"
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": 20,
+    "expected": "v1",
+    "basis": 2,
+    "quality": "METADATA_EFFECTIVE_TIME_UNKNOWN"
+  },
+  {
+    "name": "forensic-later",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      },
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v2",
+        "known_from_ns": 30,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 2,
+        "effective_from_ns": 5,
+        "supersedes_version": "v1"
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": 30,
+    "expected": "v2",
+    "basis": 1,
+    "quality": null
+  },
+  {
+    "name": "unrelated-overlap",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      },
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "other",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": 10,
+    "error": "METADATA_AMBIGUOUS"
+  },
+  {
+    "name": "exclusive-known-end",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3,
+        "known_to_ns": 20
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": 20,
+    "error": "METADATA_MISSING"
+  },
+  {
+    "name": "unspecified-basis",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 0
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": 10,
+    "error": "INVALID_EFFECTIVE_TIME_BASIS"
+  },
+  {
+    "name": "corrected-no-interval",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      },
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v2",
+        "known_from_ns": 30,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 2,
+        "effective_from_ns": 5,
+        "supersedes_version": "v1"
+      }
+    ],
+    "mode": "CORRECTED_RESEARCH",
+    "event_time_ns": 4,
+    "as_of_ns": 10,
+    "error": "METADATA_EFFECTIVE_TIME_UNKNOWN"
+  },
+  {
+    "name": "as-of-required",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "known_from_ns": 10,
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": null,
+    "error": "AS_OF_REQUIRED"
+  },
+  {
+    "name": "missing-known",
+    "versions": [
+      {
+        "instrument_id": "TEST",
+        "metadata_version": "v1",
+        "product_type": "LINEAR",
+        "margin_asset": "USDT",
+        "settlement_asset": "USDT",
+        "effective_time_basis": 3
+      }
+    ],
+    "mode": "AS_LIVED",
+    "event_time_ns": 6,
+    "as_of_ns": 10,
+    "error": "MISSING_METADATA_TIME"
+  }
+]
