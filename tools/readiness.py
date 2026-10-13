@@ -1,4 +1,4 @@
-"""Fail visibly when Foundation or Brief 002 deliverables are absent."""
+"""Fail visibly when Foundation, Brief 002 or Brief 003 deliverables are absent."""
 
 from pathlib import Path
 
@@ -33,6 +33,25 @@ REQUIRED.extend([
 ])
 REQUIRED.extend(f"tests/fixtures/binance-usdm/{name}.json" for name in
                 ("parsing", "metadata", "identity", "wire", "profile", "boundaries", "sync", "enums"))
+
+
+REQUIRED.extend([
+    "docs/briefs/Brief-003.txt",
+    "rust/crates/bqip-binance-collector/Cargo.toml",
+    "rust/crates/bqip-binance-collector/tests/transports.rs",
+    "rust/crates/bqip-binance-collector/tests/preservation.rs",
+    "rust/crates/bqip-binance-collector/tests/recovery.rs",
+    "rust/crates/bqip-binance-collector/tests/realtime.rs",
+    "rust/crates/bqip-binance-collector/tests/runtime.rs",
+    "rust/crates/bqip-binance-collector/tests/contracts.rs",
+    "rust/crates/bqip-binance-collector/examples/collector_benchmark.rs",
+    "tools/run_collector_benchmark.py",
+    "config/runtime/binance-btcusdt-collector-v1.json",
+    "docs/collectors/binance-usdm-btcusdt-v1.md",
+    "docs/collectors/binance-runtime-sources-v1.json",
+    "tests/fixtures/collector/wire.json",
+    "tests/protobuf/test_collector_binding.py",
+])
 
 
 def main() -> int:

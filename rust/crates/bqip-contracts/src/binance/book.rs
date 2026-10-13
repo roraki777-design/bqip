@@ -35,7 +35,8 @@ fn key(v: &PriceLevel) -> String {
         p.scale.unwrap_or_default()
     )
 }
-fn semantic(v: &BinanceDepthUpdate) -> Vec<u8> {
+/// Semantic identity evidence for a validated event; source provenance is excluded.
+pub fn depth_semantic_bytes(v: &BinanceDepthUpdate) -> Vec<u8> {
     let side = |levels: &[PriceLevel]| -> Vec<PriceLevel> {
         levels
             .iter()
@@ -139,7 +140,7 @@ impl BookSync {
             return Err(self.fail("ORIGINAL_SESSION_MISMATCH"));
         }
         let id = event.logical_event_id.as_ref().expect("validated identity");
-        let content = semantic(event);
+        let content = depth_semantic_bytes(event);
         if let Some(previous) = self.seen.get(id) {
             if *previous != content {
                 return Err(self.fail("VENUE_IDENTITY_CONFLICT"));

@@ -1,0 +1,6 @@
+{
+  "provenance": "Independently derived Protobuf wire keys: (16<<3)|2, (17<<3)|2, (18<<3)|2; empty message lengths 0; opaque header length 3.",
+  "typed_contexts_hex": "8201008a0100",
+  "content_encoding_hex": "920103ff00fe",
+  "content_encoding_bytes_hex": "ff00fe"
+}

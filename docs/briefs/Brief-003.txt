@@ -1,0 +1,2317 @@
+BQIP — IMPLEMENTATION BRIEF #003
+
+BINANCE BTCUSDT USDⓈ-M PERPETUAL
+RUST LIVE COLLECTOR + RAW PRESERVATION PATH
+
+ROLE
+
+You remain BQIP Principal Implementation Engineer.
+
+Architecture Lead:
+ChatGPT.
+
+Product Owner:
+user.
+
+Authoritative architecture:
+
+BQIP MASTER ARCHITECTURE SPECIFICATION v1.0 — FROZEN.
+
+Accepted implementation baselines:
+
+Brief #001:
+ACCEPTED / CLOSED
+
+Foundation commit:
+c7deed5b17c9bb0dbc50622e3c3ef565907c92d7
+
+Brief #002:
+ACCEPTED / CLOSED
+
+Accepted Brief #002 implementation commit:
+2b216ee6d6c86cb1d5aa742fd3cb314947ec8c5b
+
+The former lost Brief #002 candidate:
+
+bae55a689085fadac0f0ca98420b4e8088e3eec4
+
+is NON-AUTHORITATIVE and must never be used.
+
+============================================================
+0. IMPORTANT PHASE CLARIFICATION
+============================================================
+
+This is:
+
+IMPLEMENTATION BRIEF #003
+
+It is NOT permission to begin later venue-expansion or execution phases.
+
+This brief introduces the first real network ingestion runtime for BQIP.
+
+It does NOT authorize:
+
+- live trading;
+- order submission;
+- private Binance endpoints;
+- API keys;
+- account streams;
+- Risk;
+- OMS;
+- strategies;
+- AI control;
+- NATS;
+- JetStream;
+- S3/object-storage upload;
+- Parquet;
+- DuckDB;
+- ClickHouse;
+- terminal UI;
+- production Canonical Book Service.
+
+No capital can be affected by anything built in this brief.
+
+============================================================
+1. AUTHORITATIVE BASE
+============================================================
+
+Start from exactly:
+
+2b216ee6d6c86cb1d5aa742fd3cb314947ec8c5b
+
+Create:
+
+brief-003
+
+from that exact Git object.
+
+Do not reconstruct #002.
+
+Do not rewrite previous history.
+
+Do not modify accepted venue semantics unless an actual current
+documentation conflict is found.
+
+Before implementation record:
+
+git rev-parse HEAD
+
+and verify exact equality to:
+
+2b216ee6d6c86cb1d5aa742fd3cb314947ec8c5b
+
+============================================================
+2. PRIMARY OBJECTIVE
+============================================================
+
+Build the first production-shaped but NON-TRADING BQIP collector.
+
+It must:
+
+1. connect to real Binance USDⓈ-M public market-data infrastructure;
+
+2. receive BTCUSDT:
+   - diff depth @100ms;
+   - aggregate trades;
+
+3. obtain:
+   - exchangeInfo;
+   - REST depth snapshots;
+
+4. preserve original application payload bytes into BQRC v2 BEFORE
+   downstream parsing can affect their survival;
+
+5. maintain collector/session/capture provenance;
+
+6. perform bounded realtime handoff to the existing #002 parsers and
+   BookSync logic;
+
+7. demonstrate that realtime overload may degrade/drop while RAW
+   preservation remains independent;
+
+8. seal/recover local BQRC segments correctly;
+
+9. expose explicit operational/quality events for:
+   - connection lifecycle;
+   - parse failures;
+   - capacity drops;
+   - venue sequence gaps;
+   - resync;
+   - storage failures;
+   - crash recovery;
+
+10. run a finite live public-data smoke capture with no credentials.
+
+============================================================
+3. CURRENT OFFICIAL BINANCE RUNTIME CONTRACT
+============================================================
+
+Architecture Lead revalidated official Binance documentation on:
+
+2026-10-09
+
+Use only routed current endpoints.
+
+Depth:
+
+wss://fstream.binance.com/public/ws/btcusdt@depth@100ms
+
+Aggregate trades:
+
+wss://fstream.binance.com/market/ws/btcusdt@aggTrade
+
+REST:
+
+https://fapi.binance.com
+
+ExchangeInfo:
+
+GET /fapi/v1/exchangeInfo
+
+Depth snapshot:
+
+GET /fapi/v1/depth?symbol=BTCUSDT&limit=1000
+
+Current official runtime constraints include:
+
+- routed PUBLIC / MARKET / PRIVATE architecture;
+- direct ws mode remains supported;
+- stream symbols lowercase;
+- one WebSocket connection valid for 24 hours;
+- server ping approximately every 3 minutes;
+- disconnect if pong is not received within the documented timeout;
+- 10 incoming WebSocket messages/s limit;
+- maximum 1024 streams/connection;
+- depth and aggTrade belong to separate routed categories.
+
+For this collector:
+
+DEPTH connection and AGGTRADE connection MUST remain separate.
+
+Do not use legacy unrouted URLs.
+
+Do not use combined-stream wrappers for these two connections.
+
+If the official documentation materially contradicts any frozen rule
+during implementation:
+
+STOP.
+
+Return:
+
+DOCUMENTATION CONFLICT
+
+with exact evidence.
+
+============================================================
+4. BINANCE SNAPSHOT RATE-AWARENESS
+============================================================
+
+Current official documentation states:
+
+GET /fapi/v1/depth
+limit = 1000
+
+has request weight:
+
+20
+
+ExchangeInfo currently has request weight:
+
+1.
+
+Therefore snapshot recovery MUST be bounded.
+
+Do not create a loop that can hammer the REST endpoint during sequence
+instability.
+
+Exactly one snapshot request may be in flight for BTCUSDT at a time.
+
+Retry/backoff must be bounded and configurable.
+
+A resync storm must not starve:
+
+- raw preservation;
+- WebSocket receive;
+- disk writer;
+- process health.
+
+============================================================
+5. NEW RUST CRATE
+============================================================
+
+Create one minimal runtime crate:
+
+rust/crates/bqip-binance-collector
+
+preferred package name:
+
+bqip-binance-collector
+
+Structure it as:
+
+library code for testability
++
+one small binary entry point.
+
+Do NOT create microservices.
+
+Do NOT split depth/trades/REST into separate deployable services.
+
+One collector process may own the three source lanes for this brief.
+
+============================================================
+6. DEPENDENCY AUTHORIZATION
+============================================================
+
+Brief #003 requires real networking.
+
+Architecture Lead explicitly authorizes these NEW direct Rust dependency
+families:
+
+- tokio
+- tokio-tungstenite
+- futures-util
+- reqwest
+
+TLS must use:
+
+rustls
+
+Do NOT use native-tls / OpenSSL unless a future Architecture Directive
+explicitly authorizes it.
+
+For reqwest:
+
+default features should be disabled unless a required feature is justified.
+
+Use only the minimum rustls/HTTP functionality required.
+
+No Binance SDK.
+
+No exchange abstraction framework.
+
+BQIP owns its venue semantics.
+
+Versions must:
+
+- support Rust 1.85;
+- be pinned by Cargo.lock;
+- pass cargo-audit;
+- not introduce unnecessary features.
+
+Report exact chosen versions and feature flags.
+
+If another direct runtime dependency is genuinely necessary:
+
+STOP before adding it and report:
+
+DEPENDENCY APPROVAL REQUIRED
+
+Existing serde/serde_json/uuid/etc may continue to be used.
+
+============================================================
+7. CONNECTION MODEL
+============================================================
+
+Run two independent WebSocket connection supervisors:
+
+A.
+
+DEPTH
+
+route:
+PUBLIC
+
+stream:
+btcusdt@depth@100ms
+
+B.
+
+AGGTRADE
+
+route:
+MARKET
+
+stream:
+btcusdt@aggTrade
+
+A failure or reconnect in one must not automatically kill the other.
+
+Each physical connection attempt gets a NEW:
+
+connection_id
+
+Each successfully established stream continuity epoch gets a NEW:
+
+session_id
+
+collector_instance_id is generated once per process start.
+
+For depth:
+
+session_id is the original continuity epoch later used by the #002 logical
+identity recipe.
+
+For aggTrade:
+
+session_id is still preserved as provenance but is NOT part of its logical
+event identity.
+
+============================================================
+8. CAPTURE SEQUENCE
+============================================================
+
+One collector_instance_id owns a process-wide strictly increasing:
+
+capture_seq
+
+CaptureId remains:
+
+collector_instance_id
++
+capture_seq
+
+It must never be reused within the process.
+
+Messages from independent network lanes may be scheduled concurrently.
+
+Therefore:
+
+capture_seq represents BQIP process-ingress ordering.
+
+It does NOT represent:
+
+- economic ordering;
+- Binance global ordering;
+- cross-stream causality.
+
+Do not infer those properties.
+
+============================================================
+9. CLOCK CAPTURE
+============================================================
+
+At application-message ingress preserve:
+
+receive_timestamp_ns
+
+and:
+
+monotonic_ns_since_collector_start
+
+The timestamp must be taken at the earliest practical point AFTER the
+complete application message is available to BQIP.
+
+For WebSocket:
+
+after the complete TEXT/BINARY application message has been reconstructed.
+
+For HTTP:
+
+after the complete response body used as the raw payload is available.
+
+Use checked integer conversions.
+
+No float timestamps.
+
+P3 remains authoritative.
+
+Do not call:
+
+exchange_timestamp - receive_timestamp
+
+pure network latency.
+
+Do not parse exchange timestamps before raw preservation is allowed to
+succeed.
+
+============================================================
+10. RAW BOUNDARY
+============================================================
+
+The accepted AC-001/BQRC definition remains unchanged.
+
+For WebSocket market-data messages RAW is:
+
+the exact application message payload bytes after:
+
+TLS
+WebSocket framing
+protocol-level decompression if applicable
+
+and BEFORE:
+
+JSON parsing
+numeric conversion
+venue semantic validation
+normalization
+BookSync
+feature extraction
+
+Use direct stream mode specifically to avoid a Binance combined-stream
+wrapper.
+
+TEXT payload:
+
+preserve exact UTF-8 bytes received.
+
+BINARY payload:
+
+preserve exact binary application bytes received.
+
+Invalid UTF-8 / malformed JSON / schema-invalid content:
+
+must still survive RAW capture when bytes were received.
+
+============================================================
+11. WEBSOCKET CONTROL FRAMES
+============================================================
+
+PING
+PONG
+CLOSE
+
+are protocol/control telemetry.
+
+They are NOT market-data RawCaptureEvent payloads.
+
+Do not insert ping/pong frames into the BQRC market-data stream.
+
+However expose operational telemetry for:
+
+- ping received;
+- pong sent/processed;
+- close frame;
+- close code/reason where available;
+- transport error.
+
+Respect WebSocket protocol semantics.
+
+If tokio-tungstenite automatically handles a control behavior:
+
+do not duplicate it blindly.
+
+Test the actual behavior against a local mock WebSocket server.
+
+============================================================
+12. RAW-FIRST PIPELINE
+============================================================
+
+The required hot path is:
+
+NETWORK READ
+      |
+      v
+capture identity + receive clocks
+      |
+      v
+RAW WRITER LANE
+      |
+      +--> successful append acknowledgement
+      |
+      v
+REALTIME HANDOFF
+      |
+      v
+parser / #002 contracts / BookSync health demonstration
+
+Critical invariant:
+
+PARSING MAY NEVER DECIDE WHETHER RAW BYTES SURVIVE.
+
+A malformed message must be:
+
+RAW preserved
++
+parse failure reported.
+
+Never:
+
+parse first
+then decide whether to capture.
+
+============================================================
+13. RAW WRITER EXECUTION MODEL
+============================================================
+
+BQRC SegmentWriter is synchronous.
+
+Do NOT execute arbitrary blocking filesystem operations directly in async
+network receive tasks.
+
+Preferred implementation:
+
+one bounded Tokio mpsc command queue per raw lane
+
+feeding a dedicated:
+
+tokio::task::spawn_blocking
+
+raw-writer actor.
+
+The blocking actor owns the synchronous BQRC SegmentWriter.
+
+Async network tasks may await the RAW command/ack path.
+
+Realtime processing may NOT backpressure the raw writer.
+
+Do not introduce another direct dependency solely for channels.
+
+============================================================
+14. RAW LANES
+============================================================
+
+Implement independent preservation lanes for at least:
+
+DEPTH_WS
+
+AGGTRADE_WS
+
+HTTP_REST
+
+A storage failure affecting the entire spool root may halt all capture.
+
+A lane-specific failure should not automatically corrupt another lane.
+
+Never claim healthy capture for a source whose raw writer has failed.
+
+============================================================
+15. RAW ACKNOWLEDGEMENT SEMANTICS
+============================================================
+
+Distinguish:
+
+RAW_APPEND_ACCEPTED
+
+from:
+
+RAW_DURABILITY_FENCED
+
+and:
+
+RAW_SEGMENT_SEALED
+
+Do not call a successful write() a power-loss durable commit.
+
+Realtime handoff may occur after:
+
+RAW_APPEND_ACCEPTED
+
+because #003 does not persist capital-affecting state.
+
+But telemetry must distinguish it from fsync durability.
+
+On:
+
+raw append failure
+raw queue failure
+writer actor death
+
+the corresponding network source must NOT continue producing trusted realtime
+output.
+
+Close/degrade the source and emit visible storage/raw-loss state.
+
+============================================================
+16. DURABILITY FENCE
+============================================================
+
+Add the minimum compatible API to bqip-capture-format required to perform a
+group durability fence on the OPEN partial segment.
+
+This may include an additive operation equivalent to:
+
+flush
++
+sync_data
+
+Do NOT change BQRC v2 bytes or format version.
+
+Do NOT create BQRC v3.
+
+The fence interval is runtime configuration, not an architecture invariant.
+
+Provide a conservative documented default.
+
+Record:
+
+last durability-fenced capture sequence
+or equivalent high-water evidence per lane.
+
+On graceful shutdown:
+
+fence
+then seal.
+
+On rotation:
+
+fence
+then seal.
+
+On durability fence failure:
+
+STORAGE_FAILURE
+RAW_WRITE_FAILURE
+raw_loss_status at least POSSIBLE
+
+and do not pretend the source remained trustworthy.
+
+============================================================
+17. SEGMENTATION
+============================================================
+
+Segments must remain bounded.
+
+Rotate when either configurable limit is reached:
+
+- maximum segment age;
+- maximum segment bytes.
+
+Provide documented initial defaults appropriate for BTCUSDT capture.
+
+These defaults are operational parameters, NOT frozen architecture.
+
+A WebSocket segment must not mix unrelated continuity sessions.
+
+A reconnect creates a new session and therefore begins a new raw segment for
+that lane.
+
+HTTP responses may use their own REST lane segments.
+
+============================================================
+18. LOCAL SPOOL LAYOUT
+============================================================
+
+Use a deterministic local hierarchy such as:
+
+<spool_root>/
+  binance/
+    usdm/
+      btcusdt/
+        depth/
+        aggtrade/
+        rest/
+
+Do not bake an absolute workstation path into code.
+
+The runtime config may specify:
+
+spool_root
+
+A relative development default is acceptable.
+
+No delete/overwrite policy may silently destroy previous evidence.
+
+Disk-full must fail visibly.
+
+============================================================
+19. RAW SEGMENT MANIFEST
+============================================================
+
+BQRC seal.json remains authoritative for BQRC v2 segment sealing.
+
+Additionally implement a canonical local segment manifest required by the
+Master Architecture.
+
+Use restricted existing JCS infrastructure.
+
+Example schema identity:
+
+BQIP-RAW-SEGMENT-MANIFEST-V1
+
+The manifest must record at minimum:
+
+schema
+segment_id
+BQRC format version
+
+lane
+
+venue_profile_id
+venue_profile_hash
+
+collector_instance_id
+collector code commit
+
+connection_id where applicable
+session_id where applicable
+
+first_capture_seq
+last_capture_seq
+
+record_count
+
+first_receive_timestamp_ns
+last_receive_timestamp_ns
+
+byte_length
+segment_sha256
+
+seal_json_sha256
+
+close_reason
+
+raw_loss_status
+
+manifest_hash
+
+Manifest hashing must follow existing BQIP canonical manifest rules.
+
+Do not duplicate the payloads into the manifest.
+
+============================================================
+20. SEGMENT MANIFEST LIFECYCLE
+============================================================
+
+Manifest publication happens only after:
+
+capture.sealed
++
+valid seal.json
+
+exist and verify.
+
+Use:
+
+write temporary
+flush/fsync
+atomic rename
+directory fsync
+
+consistent with Foundation durability discipline.
+
+A manifest must never claim:
+
+SEALED_LOCAL
+
+for an invalid or unverifiable BQRC segment.
+
+============================================================
+21. STARTUP RECOVERY
+============================================================
+
+Before opening live network connections inspect the configured spool.
+
+Cases:
+
+A.
+
+capture.sealed + valid seal.json
+
+=> verify and retain.
+
+B.
+
+capture.sealed without seal.json
+
+=> explicit recover_seal path allowed;
+=> seal origin must remain RECOVERED.
+
+C.
+
+capture.partial with valid prefix
+
+=> do NOT mutate or overwrite the original partial evidence.
+
+Use existing BQRC recovery semantics to preserve/recover the valid prefix into
+new recovery evidence.
+
+The original partial remains available for forensic inspection.
+
+Record:
+
+PROCESS_CRASH_GAP
+and appropriate RAW_LOSS_STATUS.
+
+D.
+
+structurally corrupt segment
+
+=> FAILED
+
+Do not silently truncate and bless it.
+
+Startup recovery must finish or produce explicit failure accounting BEFORE new
+capture for the affected lane begins.
+
+============================================================
+22. REALTIME HANDOFF
+============================================================
+
+After RAW_APPEND_ACCEPTED:
+
+attempt non-blocking handoff to the realtime/parser lane.
+
+Use a bounded queue.
+
+This handoff MUST use behavior equivalent to:
+
+try_send
+
+not an unbounded wait behind parser/book processing.
+
+If realtime capacity is exhausted:
+
+RAW capture continues.
+
+Emit:
+
+LOCAL_CAPACITY_DROP
+
+with:
+
+raw_loss_status = NONE
+
+for the already captured event.
+
+For depth:
+
+realtime_continuity = BROKEN
+
+and BookSync must become:
+
+DEGRADED
+/
+RESYNC_REQUIRED
+
+For aggTrade:
+
+record normalized-stream continuity loss visibly.
+
+Raw replay remains the future repair source.
+
+============================================================
+23. NO UNBOUNDED QUEUES
+============================================================
+
+No unbounded queue is permitted in the hot path.
+
+Explicitly bound:
+
+- depth raw writer queue;
+- aggTrade raw writer queue;
+- REST raw writer queue;
+- depth realtime queue;
+- aggTrade realtime queue;
+- snapshot bridge buffer.
+
+All capacities must be:
+
+configurable
+observable
+
+and included in runtime startup logs.
+
+Do not pretend a huge queue solves overload.
+
+============================================================
+24. PARSER FAILURE
+============================================================
+
+After raw append:
+
+parse with the already accepted #002 Binance parsers.
+
+If parsing fails:
+
+raw evidence remains valid.
+
+Emit:
+
+CAUSE_CODE_PARSE_FAILURE
+
+with:
+
+raw_loss_status = NONE
+
+Do not kill the raw writer because venue JSON is malformed.
+
+Depending on source:
+
+depth parse failure =>
+realtime continuity cannot remain HEALTHY.
+
+aggTrade parse failure =>
+normalized trade continuity becomes visibly incomplete.
+
+Do not fabricate an event.
+
+============================================================
+25. EXCHANGEINFO ACQUISITION
+============================================================
+
+At startup request:
+
+GET /fapi/v1/exchangeInfo
+
+Preserve exact HTTP response body RAW before parsing.
+
+Record typed HttpSourceContext from #002.
+
+Validate:
+
+BTCUSDT profile
+PERPETUAL
+USD_M
+assets
+filters
+status
+
+using #002 semantics.
+
+Do not infer effective_from from retrieval time.
+
+Create/update the UNKNOWN-effective metadata observation exactly according to
+#002-A.
+
+Do not hardcode current tickSize or stepSize.
+
+============================================================
+26. EXCHANGEINFO REFRESH
+============================================================
+
+Support configurable periodic exchangeInfo refresh.
+
+Its purpose is detecting metadata changes.
+
+Do not silently mutate the previous metadata version.
+
+When semantically relevant metadata changes:
+
+append a NEW metadata observation/version.
+
+effective_time_basis remains UNKNOWN unless evidence establishes otherwise.
+
+The initial refresh interval is an operational configuration parameter.
+
+Do not poll aggressively.
+
+============================================================
+27. HTTP RAW CONTRACT
+============================================================
+
+For REST responses preserve:
+
+raw response body bytes
+
+plus typed source context:
+
+method
+endpoint
+canonical query
+status
+receive timestamp
+CaptureId
+raw content hash
+
+Do not treat a non-2xx response as a valid snapshot or metadata object.
+
+But if a response body was received:
+
+preserve it as evidence before classifying the HTTP failure.
+
+Do not use ProcessingContext as HTTP evidence.
+
+============================================================
+28. HTTP CONTENT ENCODING
+============================================================
+
+Avoid hidden byte transformations.
+
+Prefer requesting:
+
+Accept-Encoding: identity
+
+and disable automatic response decompression features unless they are explicitly
+required.
+
+The bytes labeled RAW must have an unambiguous documented boundary.
+
+If Binance returns encoded content despite the request:
+
+preserve/document the actual application-body semantics consistently and stop
+if the existing raw contract becomes ambiguous.
+
+Do not silently hash one representation and persist another.
+
+============================================================
+29. DEPTH SESSION START
+============================================================
+
+For a new depth session:
+
+1. open PUBLIC WebSocket;
+
+2. establish new connection_id/session_id;
+
+3. begin RAW capture immediately;
+
+4. begin bounded realtime buffering;
+
+5. obtain a new REST depth snapshot;
+
+6. RAW-capture the REST response before parsing;
+
+7. apply #002 bridge semantics:
+
+drop u < S
+
+find:
+
+U <= S <= u
+
+then require:
+
+current.pu == previous.u
+
+8. only then can BookSync demonstration become HEALTHY.
+
+Do NOT reuse a snapshot from an old depth session as if continuity were
+guaranteed.
+
+============================================================
+30. SNAPSHOT RESYNC CONTROL
+============================================================
+
+Exactly one snapshot request may be in flight.
+
+Use bounded exponential backoff.
+
+Backoff parameters must be configurable and deterministic under tests.
+
+Apply a circuit/cooldown mechanism so repeated gaps cannot cause uncontrolled
+weight-20 REST requests.
+
+Do not block raw WebSocket capture while waiting for snapshot recovery.
+
+If the bounded realtime depth buffer saturates during recovery:
+
+drop realtime entries explicitly
+
+but keep RAW preservation running.
+
+Then a fresh resync is required.
+
+============================================================
+31. AGGTRADE RUNTIME
+============================================================
+
+After raw append, parse with accepted #002 semantics.
+
+Keep:
+
+a
+f
+l
+q
+nq
+m
+E
+T
+st
+
+TradeGranularity:
+
+AGGREGATED
+
+Never generate child fills for IDs f..l.
+
+m=true:
+SELL aggressor
+
+m=false:
+BUY aggressor
+
+st=2:
+PROFILE_MISMATCH
+
+No session_id in aggTrade logical identity.
+
+Reconnect re-observation of the same aggregate ID must retain the same logical
+identity recipe.
+
+============================================================
+32. DEPTH RUNTIME IDENTITY
+============================================================
+
+Use accepted #002 recipe:
+
+BINANCE
+USD_M_FUTURES
+BTCUSDT
+DEPTH_UPDATE
+<original_session_id>
+<U>
+<u>
+
+The session ID is captured from the real source session.
+
+Replay must later preserve it.
+
+A reconnect creates a new source session.
+
+Same session/U/u + incompatible semantic payload:
+
+VENUE_IDENTITY_CONFLICT
+
+Do not generate a second logical identity by adding pu/hash/content.
+
+============================================================
+33. RECONNECT SUPERVISOR
+============================================================
+
+Implement bounded reconnect behavior for each WebSocket source.
+
+Required:
+
+finite connect timeout
+bounded exponential backoff
+maximum backoff
+clean creation of new connection_id/session_id
+explicit connection-close telemetry
+
+Do not busy-loop.
+
+Do not assume a connection lasts forever.
+
+The implementation must naturally tolerate Binance's documented 24-hour
+disconnect behavior.
+
+A proactive pre-24-hour recycle MAY be configurable, but must not be presented
+as a Binance requirement.
+
+============================================================
+34. PING / PONG TESTING
+============================================================
+
+Create an offline local mock WebSocket server.
+
+Test:
+
+server sends ping
+collector remains protocol-compliant
+required pong behavior occurs
+connection does not falsely mark data payloads from control frames
+
+Do not require Binance internet access in CI.
+
+============================================================
+35. GRACEFUL SHUTDOWN
+============================================================
+
+Handle process shutdown.
+
+On SIGINT / supported SIGTERM:
+
+1. stop initiating new external work;
+
+2. close WebSocket sessions cleanly where practical;
+
+3. stop realtime handoff;
+
+4. drain already accepted raw writer commands;
+
+5. durability fence;
+
+6. seal active BQRC segments;
+
+7. verify seal;
+
+8. publish segment manifests;
+
+9. report final counters;
+
+10. exit.
+
+If sealing fails:
+
+exit non-zero.
+
+Do not pretend graceful shutdown succeeded.
+
+============================================================
+36. ABNORMAL TERMINATION
+============================================================
+
+Do not claim graceful guarantees for:
+
+SIGKILL
+host crash
+power loss
+
+Those cases rely on:
+
+BQRC partial recovery
+durability-fence RPO
+startup recovery
+explicit gap accounting.
+
+Document the distinction.
+
+============================================================
+37. OBSERVABILITY
+============================================================
+
+No metrics backend is introduced yet.
+
+Maintain runtime counters and structured log output for at least:
+
+events_received_total
+
+raw_append_accepted_total
+
+raw_durability_fenced_total
+
+raw_segments_sealed_total
+
+raw_bytes_total
+
+raw_writer_failures_total
+
+local_capacity_drops_total
+
+parse_failures_total
+
+venue_gaps_total
+
+identity_conflicts_total
+
+resync_started_total
+
+resync_completed_total
+
+snapshot_requests_total
+
+snapshot_failures_total
+
+websocket_connects_total
+
+websocket_disconnects_total
+
+reconnects_total
+
+ping_received_total
+
+spool_bytes
+
+active_session_id per source
+
+Do not add Prometheus/NATS/OTel in this brief.
+
+============================================================
+38. STRUCTURED LOGGING
+============================================================
+
+Prefer deterministic JSON-line operational logs using existing serde_json rather
+than adding a logging framework dependency solely for this brief.
+
+No credentials exist.
+
+Still never log entire market payloads by default.
+
+Log:
+
+CaptureId
+lane
+connection/session IDs
+cause/state
+sizes
+timings
+hash IDs where useful
+
+not raw bodies.
+
+============================================================
+39. CONFIGURATION
+============================================================
+
+Use a small deterministic JSON runtime config.
+
+No new TOML/YAML dependency.
+
+Example location:
+
+config/runtime/binance-btcusdt-collector-v1.json
+
+It may define:
+
+spool_root
+
+raw queue capacities
+realtime queue capacities
+snapshot buffer capacity
+
+segment max age
+segment max bytes
+
+durability fence interval
+
+connect timeout
+
+HTTP timeout
+
+reconnect min/max backoff
+
+snapshot retry min/max backoff
+snapshot cooldown / attempt budget
+
+exchangeInfo refresh interval
+
+The config must not contain secrets.
+
+Validate every value.
+
+Reject zero/absurd values where they make semantics invalid.
+
+============================================================
+40. DEFAULTS ARE NOT ARCHITECTURE
+============================================================
+
+Initial queue sizes, durations and segment thresholds are operational defaults.
+
+They are not frozen architecture.
+
+Document them separately.
+
+P8 remains authoritative:
+
+optimize after measurement.
+
+Do not claim that an arbitrary queue size is "institutional".
+
+============================================================
+41. MOCK TRANSPORT TEST HARNESS
+============================================================
+
+CI tests must be fully offline.
+
+Implement local mock WS/HTTP peers sufficient to deterministically test:
+
+- valid depth stream;
+- valid aggTrade stream;
+- malformed JSON;
+- binary payload;
+- ping/pong;
+- close frame;
+- abrupt disconnect;
+- reconnect;
+- snapshot success;
+- snapshot timeout;
+- snapshot 500/non-2xx;
+- snapshot delayed while depth continues;
+- sequence gap;
+- realtime saturation;
+- raw writer failure;
+- graceful shutdown.
+
+Do not build a generic exchange simulator.
+
+Only implement what is needed to falsify #003 invariants.
+
+============================================================
+42. PRESERVATION-INDEPENDENCE ATTACK TEST
+============================================================
+
+Mandatory adversarial test:
+
+Configure realtime queue capacity extremely small.
+
+Block or stall the realtime consumer.
+
+Inject a deterministic sequence of N valid market-data messages.
+
+Expected:
+
+RAW BQRC contains ALL N application payloads exactly.
+
+Realtime contains fewer than N.
+
+LOCAL_CAPACITY_DROP > 0.
+
+raw_loss_status = NONE for the dropped realtime copies.
+
+Depth realtime continuity becomes BROKEN / RESYNC_REQUIRED.
+
+This is a CRITICAL acceptance test.
+
+If this fails:
+
+Brief #003 FAILS.
+
+============================================================
+43. PARSER-INDEPENDENCE ATTACK TEST
+============================================================
+
+Inject:
+
+valid bytes
+malformed JSON
+valid bytes
+
+Expected:
+
+all three payloads exist byte-exact in BQRC.
+
+The malformed message produces:
+
+PARSE_FAILURE
+
+but does NOT prevent later RAW capture.
+
+============================================================
+44. RAW-WRITER-FAILURE ATTACK
+============================================================
+
+Inject a deterministic storage/write failure.
+
+Expected:
+
+no trusted realtime output may continue for events not successfully appended.
+
+Visible:
+
+STORAGE_FAILURE
+RAW_WRITE_FAILURE
+
+source degraded/stopped
+
+raw_loss_status:
+POSSIBLE or CONFIRMED as appropriate
+
+No silent continuation.
+
+============================================================
+45. SESSION / RECONNECT ATTACK
+============================================================
+
+Force depth disconnect and reconnect.
+
+Verify:
+
+connection_id changes
+
+session_id changes
+
+new BQRC depth segment begins
+
+old snapshot is not trusted for the new session
+
+new depth logical IDs use the NEW original session
+
+aggTrade identity still excludes session.
+
+============================================================
+46. CRASH-RECOVERY TEST
+============================================================
+
+Construct an interrupted capture.partial containing:
+
+header
+several complete frames
+one truncated tail
+
+Restart recovery.
+
+Expected:
+
+original partial remains preserved
+
+valid prefix is recoverable through Foundation behavior
+
+new recovery evidence has explicit origin/state
+
+PROCESS_CRASH_GAP visible
+
+no corrupt tail is silently blessed.
+
+============================================================
+47. SEAL / MANIFEST ATTACK TESTS
+============================================================
+
+At minimum test:
+
+tampered sealed bytes
+tampered seal.json
+tampered segment manifest
+wrong segment hash
+wrong record count
+wrong first/last capture seq
+wrong profile hash
+manifest before valid seal
+existing destination collision
+
+All must fail visibly.
+
+============================================================
+48. QUEUE AND MEMORY BOUNDS
+============================================================
+
+Tests must prove configured capacities are actually enforced.
+
+Do not merely store capacities in config while using unbounded collections.
+
+Snapshot/bridge buffering must be bounded.
+
+If the live book demonstration cannot maintain continuity because the buffer
+filled:
+
+DEGRADED
+RESYNC_REQUIRED
+
+RAW continues.
+
+============================================================
+49. LIVE PUBLIC SMOKE VALIDATION
+============================================================
+
+After ALL offline gates pass, perform a finite real-network smoke validation.
+
+No API key.
+
+No private endpoint.
+
+No execution.
+
+Connect to:
+
+PUBLIC depth
+MARKET aggTrade
+
+and perform:
+
+exchangeInfo request
+depth snapshot request
+
+Capture for a finite period sufficient to demonstrate both streams.
+
+Suggested acceptance run:
+
+approximately 90 seconds
+
+unless environment limits require another finite duration.
+
+The live smoke run is NOT part of CI.
+
+Store smoke evidence OUTSIDE the reviewed Git commit.
+
+Report:
+
+start/end UTC
+
+collector commit
+
+profile hash
+
+collector_instance_id
+
+connection/session IDs
+
+depth messages received
+
+aggTrade messages received
+
+HTTP responses captured
+
+raw bytes
+
+segments sealed
+
+segment verification
+
+manifest verification
+
+parse failures
+
+capacity drops
+
+venue gaps
+
+resync count
+
+storage failures
+
+graceful shutdown result
+
+Do not include huge raw payload dumps in the report.
+
+============================================================
+50. LIVE SMOKE SUCCESS CONDITION
+============================================================
+
+For the acceptance smoke run expect:
+
+at least one successfully captured depth event
+
+at least one successfully captured aggTrade event
+
+one valid exchangeInfo observation
+
+one valid REST depth snapshot
+
+zero raw writer failures
+
+all produced segments verify
+
+all produced manifests verify
+
+graceful shutdown seals active segments
+
+If Binance is unavailable or the environment blocks network:
+
+do NOT fabricate success.
+
+Return:
+
+LIVE SMOKE BLOCKED — EXTERNAL ENVIRONMENT
+
+with local/offline gates separately reported.
+
+============================================================
+51. BENCHMARK / LOAD EVIDENCE
+============================================================
+
+Add an offline synthetic benchmark.
+
+Its purpose is measurement, not marketing.
+
+Measure at minimum:
+
+messages/s offered
+
+payload bytes/s
+
+raw append acknowledgement latency:
+p50
+p95
+p99
+
+realtime drops
+
+raw loss count
+
+CPU estimate if available
+
+peak process memory if available
+
+disk bytes written
+
+durability-fence latency
+
+segment-seal latency
+
+Use several bounded load levels.
+
+Include at least one scenario materially above the observed smoke-run traffic.
+
+No architecture-wide performance threshold is frozen yet.
+
+However:
+
+raw loss caused only by realtime saturation must be ZERO.
+
+============================================================
+52. FOUNDATION REGRESSION
+============================================================
+
+All #001 and #002 tests remain green.
+
+Do not renumber existing Protobuf enums.
+
+Do not change:
+
+BQRC v2 format
+
+TradeEvent semantics
+
+depth identity recipe
+
+temporal metadata rules
+
+unless required by an explicit Architecture Decision.
+
+Any required breaking contract change:
+
+STOP.
+
+Report:
+
+ARCHITECTURE CONFLICT
+
+============================================================
+53. SECURITY
+============================================================
+
+No credentials.
+
+No API keys.
+
+No Binance private routes.
+
+TLS certificate verification MUST remain enabled.
+
+No:
+
+danger_accept_invalid_certs
+custom insecure verifier
+plaintext ws:// for Binance
+
+Local test servers may use loopback test transport as needed.
+
+Run:
+
+cargo-audit
+pip-audit
+gitleaks
+
+Dependency lock changes must be reviewed because #003 intentionally adds runtime
+network dependencies.
+
+============================================================
+54. SUPPLY CHAIN
+============================================================
+
+Record exact new direct dependencies, versions, features and transitive lock
+change.
+
+Cargo.lock must be committed.
+
+No Git dependencies.
+
+No unpinned branch dependencies.
+
+No downloaded executable committed to repo.
+
+Existing GitHub Actions SHA pinning remains unchanged unless a genuine CI change
+is required.
+
+============================================================
+55. CI
+============================================================
+
+CI must run OFFLINE-DATA semantics:
+
+no Binance live endpoint required for tests.
+
+CI may download normal pinned Rust/Python dependencies during setup as already
+allowed by project workflow.
+
+The runtime collector tests use local mock peers.
+
+Do not make CI flaky by depending on Binance availability.
+
+============================================================
+56. EXPECTED FILE AREAS
+============================================================
+
+Likely additions:
+
+rust/crates/bqip-binance-collector/
+  Cargo.toml
+  src/lib.rs
+  src/main.rs
+  src/config.rs
+  src/runtime.rs
+  src/ws.rs
+  src/http.rs
+  src/raw_writer.rs
+  src/supervisor.rs
+  src/telemetry.rs
+  tests/
+
+config/runtime/
+  binance-btcusdt-collector-v1.json
+
+docs/collectors/
+  binance-usdm-btcusdt-v1.md
+
+docs/briefs/
+  Brief-003.txt
+
+tests/fixtures/collector/
+or crate-local runtime fixtures as appropriate.
+
+Minimal compatible additions to:
+
+bqip-capture-format
+
+are allowed only for:
+
+durability fencing
+writer introspection required by manifest construction
+
+Do not move BQRC ownership into the collector crate.
+
+============================================================
+57. DOCUMENTATION SOURCES
+============================================================
+
+Extend source documentation with a runtime review record.
+
+Preserve the #002 source manifest.
+
+Record revalidation date:
+
+2026-10-09
+
+At minimum revalidate:
+
+WebSocket Market Streams — Connect
+
+Important WebSocket Change Notice — Base URL Split & Migration
+
+How to manage a local order book correctly
+
+Public WebSocket market stream docs
+
+Market WebSocket stream docs
+
+REST Market Data:
+exchangeInfo
+depth
+
+Record the operational assertions relied upon.
+
+Do not hash Binance HTML.
+
+No runtime documentation scraping.
+
+============================================================
+58. ERROR DISCIPLINE
+============================================================
+
+Do not use panics for expected runtime failures.
+
+Typed errors must distinguish at least:
+
+configuration failure
+
+DNS/connect failure
+
+TLS/WebSocket handshake failure
+
+HTTP request failure
+
+HTTP status failure
+
+raw writer failure
+
+durability fence failure
+
+seal/manifest failure
+
+parse failure
+
+profile mismatch
+
+venue gap
+
+identity conflict
+
+snapshot/resync exhaustion
+
+graceful shutdown failure
+
+No error may silently convert into healthy state.
+
+============================================================
+59. TRUST STATES
+============================================================
+
+Do not collapse:
+
+RAW HEALTH
+
+and:
+
+REALTIME HEALTH
+
+into one boolean.
+
+It must be possible to represent:
+
+RAW healthy
+REALTIME degraded
+
+This is the core P11 case.
+
+Conversely:
+
+RAW failed
+
+must prevent the source from claiming trusted realtime operation.
+
+============================================================
+60. RESEARCH / EXECUTION BOUNDARY
+============================================================
+
+The collector may:
+
+capture
+parse
+validate
+demonstrate BookSync health
+
+It may NOT:
+
+generate strategies
+generate signals
+place orders
+manage positions
+calculate portfolio risk
+access trading credentials
+
+No execution package or endpoint belongs in Brief #003.
+
+============================================================
+61. DEFINITION OF DONE
+============================================================
+
+Brief #003 is complete only if ALL are true:
+
+- branch starts from exact accepted #002 commit;
+
+- new collector crate exists;
+
+- current routed Binance URLs are used;
+
+- separate depth and aggTrade connections exist;
+
+- real HTTP exchangeInfo and snapshot acquisition exists;
+
+- raw bytes are captured BEFORE parser success can matter;
+
+- invalid JSON is still raw-preserved;
+
+- BQRC v2 format remains unchanged;
+
+- bounded raw writer lanes exist;
+
+- bounded realtime handoff exists;
+
+- realtime saturation cannot stop RAW preservation in the critical attack test;
+
+- raw writer failure stops trusted realtime continuation;
+
+- receive wall + monotonic clocks are captured correctly;
+
+- collector_instance_id / connection_id / session_id / CaptureId behavior is
+  correct;
+
+- reconnect creates new session identity where required;
+
+- depth resync obeys accepted #002 semantics;
+
+- snapshot requests are rate-aware and bounded;
+
+- no resync storm exists;
+
+- exchangeInfo evidence is raw-preserved and mapped under #002 metadata rules;
+
+- periodic metadata observation is supported;
+
+- graceful shutdown fences/seals/verifies segments;
+
+- abnormal partial recovery is tested;
+
+- segment manifests are canonical and verified;
+
+- operational telemetry exposes preservation vs realtime health separately;
+
+- all queues/buffers are bounded;
+
+- offline mock transport tests pass;
+
+- preservation-independence attack passes;
+
+- parser-independence attack passes;
+
+- storage-failure attack passes;
+
+- reconnect/session attack passes;
+
+- crash recovery attack passes;
+
+- Foundation regressions pass;
+
+- Rust fmt/clippy/tests pass;
+
+- Python existing tests pass;
+
+- Protobuf generation/drift passes;
+
+- cargo-audit passes;
+
+- pip-audit passes;
+
+- gitleaks passes;
+
+- FILES.sha256 passes;
+
+- clean checkout passes;
+
+- live public smoke validation succeeds OR is explicitly reported externally
+  blocked without falsifying PASS;
+
+- synthetic load benchmark evidence exists;
+
+- no credentials exist;
+
+- no private Binance endpoint exists;
+
+- no NATS/JetStream exists;
+
+- no object-store uploader exists;
+
+- no Brief #004 work exists.
+
+============================================================
+62. REQUIRED VALIDATION REPORT
+============================================================
+
+Return:
+
+BQIP IMPLEMENTATION BRIEF #003 VALIDATION REPORT
+
+Include:
+
+Base commit:
+
+Brief #003 candidate commit:
+
+Branch:
+
+Files changed:
+
+Dependency delta:
+- direct dependency
+- exact version
+- features
+- reason
+
+Documentation revalidation:
+PASS / CONFLICT
+
+Collector crate:
+PASS / FAIL
+
+Depth WebSocket:
+PASS / FAIL
+
+AggTrade WebSocket:
+PASS / FAIL
+
+ExchangeInfo HTTP:
+PASS / FAIL
+
+Depth snapshot HTTP:
+PASS / FAIL
+
+Raw-first invariant:
+PASS / FAIL
+
+BQRC v2 unchanged:
+PASS / FAIL
+
+Durability fence:
+PASS / FAIL
+
+Segment rotation:
+PASS / FAIL
+
+Segment manifest:
+PASS / FAIL
+
+Startup recovery:
+PASS / FAIL
+
+Collector/session identity:
+PASS / FAIL
+
+Receive/monotonic clocks:
+PASS / FAIL
+
+Realtime non-blocking handoff:
+PASS / FAIL
+
+Preservation-independence attack:
+PASS / FAIL
+
+Parser-independence attack:
+PASS / FAIL
+
+Raw-writer-failure attack:
+PASS / FAIL
+
+Reconnect/session attack:
+PASS / FAIL
+
+Crash-recovery attack:
+PASS / FAIL
+
+Snapshot rate guard:
+PASS / FAIL
+
+BookSync health demonstration:
+PASS / FAIL
+
+Operational telemetry:
+PASS / FAIL
+
+Queue bounds:
+PASS / FAIL
+
+Graceful shutdown:
+PASS / FAIL
+
+Offline mock tests:
+PASS / FAIL
+
+Live smoke:
+PASS / FAIL / EXTERNAL BLOCK
+
+Live smoke evidence summary:
+
+Synthetic benchmark:
+PASS / FAIL
+
+Benchmark measurements:
+<report them, do not editorialize>
+
+Foundation regression:
+PASS / FAIL
+
+Rust:
+fmt
+clippy
+tests
+
+Python:
+tests
+protobuf tests
+ruff
+mypy
+
+Protobuf:
+generation
+drift
+
+FILES.sha256:
+PASS / FAIL
+
+Security:
+cargo-audit
+pip-audit
+gitleaks
+
+Clean checkout:
+PASS / FAIL
+
+Network runtime added:
+YES — PUBLIC MARKET DATA ONLY
+
+Private API runtime added:
+MUST BE NO
+
+Credentials added:
+MUST BE NO
+
+NATS/JetStream:
+MUST BE NO
+
+Object storage:
+MUST BE NO
+
+Execution/trading:
+MUST BE NO
+
+Brief #004 work:
+MUST BE NO
+
+Definition of Done:
+PASS / FAIL
+
+List every assumption.
+
+List every operational parameter/default chosen.
+
+List every official Binance assertion relied upon.
+
+List every new dependency.
+
+List every failure observed during live smoke.
+
+List any artifact or evidence that could not be independently reproduced.
+
+============================================================
+63. REQUIRED DELIVERY ARTIFACTS
+============================================================
+
+Deliver ALL FIVE together:
+
+1.
+BQIP_Brief_003_Source_<SHORT_SHA>.zip
+
+2.
+BQIP_Brief_003_Review.bundle
+
+3.
+BQIP_Brief_003_Validation_Report.md
+
+4.
+BQIP_Brief_003_Validation_Evidence.zip
+
+5.
+DELIVERY.sha256
+
+The Source ZIP must be produced from the exact candidate commit.
+
+The Git bundle must contain:
+
+refs/heads/brief-003
+
+and permit reconstruction from accepted #002 history.
+
+Validation Evidence must include:
+
+clean checkout commands/results
+test logs
+security scan logs
+dependency delta
+mock-transport evidence
+preservation attack evidence
+recovery evidence
+benchmark evidence
+live smoke evidence
+artifact verification
+clean Git status
+environment/tool versions
+
+DELIVERY.sha256 must cover all delivered payload artifacts.
+
+Do not lose the Source ZIP or bundle.
+
+============================================================
+64. COMPLETION CONDITION
+============================================================
+
+If every mandatory local/offline DoD gate passes and live smoke succeeds:
+
+end exactly:
+
+IMPLEMENTATION BRIEF #003 COMPLETE — AWAITING ARCHITECT REVIEW
+
+If all deterministic/local gates pass but only real external connectivity is
+blocked:
+
+end exactly:
+
+BRIEF #003 LOCALLY COMPLETE — LIVE SMOKE EXTERNALLY BLOCKED
+
+If an architecture/dependency/documentation decision is required:
+
+end exactly:
+
+BRIEF #003 BLOCKED — AWAITING ARCHITECT DECISION
+
+Do NOT begin Brief #004.

@@ -471,6 +471,35 @@ pub struct SegmentWriter {
 }
 
 impl SegmentWriter {
+    pub fn byte_length(&self) -> u64 {
+        self.bytes
+    }
+
+    pub fn record_count(&self) -> u64 {
+        self.count
+    }
+
+    /// Group durability fence on an OPEN segment; not a seal or a power-loss claim.
+    pub fn durability_fence(&mut self) -> Result<()> {
+        if self.state != RawSegmentState::Open {
+            return Err(format_error("SEGMENT_NOT_OPEN", self.bytes));
+        }
+        let result = (|| -> Result<()> {
+            let file = self
+                .file
+                .as_mut()
+                .ok_or_else(|| format_error("SEGMENT_NOT_OPEN", self.bytes))?;
+            file.flush()?;
+            file.sync_data()?;
+            File::open(&self.directory)?.sync_all()?;
+            Ok(())
+        })();
+        if result.is_err() {
+            self.state = RawSegmentState::Failed;
+        }
+        result
+    }
+
     pub fn state(&self) -> RawSegmentState {
         self.state
     }

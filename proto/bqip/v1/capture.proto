@@ -1,6 +1,7 @@
 syntax = "proto3";
 package bqip.v1;
 import "bqip/v1/common.proto";
+import "bqip/v1/source.proto";
 
 enum PayloadKind {
   PAYLOAD_KIND_UNKNOWN = 0;
@@ -37,4 +38,8 @@ message RawCaptureEvent {
   optional int64 exchange_timestamp_ns = 13;
   optional bytes venue_event_id = 14;
   ProcessingContext processing_context = 15;
+  // Additive transport evidence. BQRC v2 framing and prior tags are unchanged.
+  HttpSourceContext http_source = 16;
+  StreamSourceContext stream_source = 17;
+  optional bytes http_content_encoding = 18;
 }
