@@ -2,7 +2,7 @@ use crate::{capture::Lane, Error, Kind, Result};
 use serde_json::{json, Value};
 use std::{
     collections::BTreeMap,
-    fs::{File, OpenOptions},
+    fs::OpenOptions,
     io::{BufWriter, Write},
     path::Path,
     sync::{
@@ -221,9 +221,8 @@ impl Meter {
         })})
     }
 }
-// Flush the containing directory after a file rename or ownership change.
+// Flush directory entries on POSIX; validate the directory on Windows.
+// Windows does not provide the POSIX directory-entry durability guarantee here.
 pub fn sync_dir(path: &Path) -> Result<()> {
-    File::open(path)
-        .and_then(|f| f.sync_all())
-        .map_err(|e| Error::new(Kind::SealManifest, e))
+    bqip_capture_format::sync_dir(path).map_err(|e| Error::new(Kind::SealManifest, e))
 }

@@ -173,6 +173,10 @@ fsync. Existing destinations, symlinks and ownership collisions fail. Atomic ren
 assumes a supported local POSIX filesystem and cooperating exclusive spool owner;
 concurrent external mutation and NFS/Windows semantics are not supported claims.
 
+Windows smoke tests retain file flush/sync operations, but directory synchronization
+only validates that the path exists and is a directory. This avoids POSIX directory
+opens on Windows; it does not provide the POSIX directory-entry durability guarantee.
+
 ## Operational defaults
 
 | Parameter | Default |

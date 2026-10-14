@@ -9,3 +9,5 @@ __pycache__/
 !.env.example
 /artifacts/
 /spool/
+
+roots.sst

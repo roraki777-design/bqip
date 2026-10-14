@@ -13,6 +13,7 @@ use std::{
     path::PathBuf,
     sync::Arc,
 };
+use tempfile::TempDir;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use uuid::Uuid;
 pub const BASE: &str = "2b216ee6d6c86cb1d5aa742fd3cb314947ec8c5b";
@@ -39,11 +40,13 @@ pub struct Env {
     pub meter: Arc<Meter>,
     logger: Logger,
     guard: SpoolGuard,
+    // Keep the directory alive until the logger and spool guard are released.
+    temp_dir: TempDir,
 }
 impl Env {
     pub fn new() -> Self {
-        let base = std::env::temp_dir().join(format!("bqip003-test-{}", Uuid::new_v4()));
-        fs::create_dir(&base).unwrap();
+        let temp_dir = tempfile::tempdir().expect("create isolated test directory");
+        let base = temp_dir.path().to_path_buf();
         let config = Config {
             spool_root: base.join("spool"),
             ..Config::default()
@@ -58,6 +61,7 @@ impl Env {
             meter,
             logger,
             guard,
+            temp_dir,
         }
     }
     pub fn record(
@@ -113,7 +117,9 @@ impl Env {
     pub fn finish(self) {
         self.logger.finish().unwrap();
         self.guard.release().unwrap();
-        fs::remove_dir_all(self.base).unwrap();
+        self.temp_dir
+            .close()
+            .expect("remove isolated test directory");
     }
 }
 pub async fn request(stream: &mut tokio::net::TcpStream) -> Vec<u8> {
