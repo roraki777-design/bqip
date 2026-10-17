@@ -1,0 +1,31 @@
+{
+  "spool_root": "spool",
+  "raw_queues": [
+    16,
+    16,
+    4
+  ],
+  "realtime_queues": [
+    64,
+    128
+  ],
+  "snapshot_buffer": 128,
+  "book_session_events": 10000,
+  "book_session_bytes": 16777216,
+  "log_capacity": 1024,
+  "ws_max_bytes": 1048576,
+  "http_max_bytes": 16777216,
+  "segment_max_bytes": 67108864,
+  "segment_max_age_ms": 60000,
+  "fence_ms": 1000,
+  "connect_timeout_ms": 10000,
+  "http_timeout_ms": 10000,
+  "close_timeout_ms": 2000,
+  "reconnect_min_ms": 1000,
+  "reconnect_max_ms": 30000,
+  "snapshot_retry_min_ms": 5000,
+  "snapshot_retry_max_ms": 20000,
+  "snapshot_attempt_budget": 3,
+  "snapshot_cooldown_ms": 60000,
+  "metadata_refresh_ms": 300000
+}

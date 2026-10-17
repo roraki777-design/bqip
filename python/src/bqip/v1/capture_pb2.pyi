@@ -1,4 +1,5 @@
 from bqip.v1 import common_pb2 as _common_pb2
+from bqip.v1 import source_pb2 as _source_pb2
 from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
@@ -40,7 +41,7 @@ RAW_SEGMENT_STATE_FAILED: RawSegmentState
 RAW_SEGMENT_STATE_RECOVERED_UNVERIFIED: RawSegmentState
 
 class RawCaptureEvent(_message.Message):
-    __slots__ = ("capture_id", "connection_id", "session_id", "transport", "source", "endpoint", "channel", "receive_timestamp_ns", "monotonic_ns_since_collector_start", "payload_kind", "payload_length", "raw_content_hash", "exchange_timestamp_ns", "venue_event_id", "processing_context")
+    __slots__ = ("capture_id", "connection_id", "session_id", "transport", "source", "endpoint", "channel", "receive_timestamp_ns", "monotonic_ns_since_collector_start", "payload_kind", "payload_length", "raw_content_hash", "exchange_timestamp_ns", "venue_event_id", "processing_context", "http_source", "stream_source", "http_content_encoding")
     CAPTURE_ID_FIELD_NUMBER: _ClassVar[int]
     CONNECTION_ID_FIELD_NUMBER: _ClassVar[int]
     SESSION_ID_FIELD_NUMBER: _ClassVar[int]
@@ -56,6 +57,9 @@ class RawCaptureEvent(_message.Message):
     EXCHANGE_TIMESTAMP_NS_FIELD_NUMBER: _ClassVar[int]
     VENUE_EVENT_ID_FIELD_NUMBER: _ClassVar[int]
     PROCESSING_CONTEXT_FIELD_NUMBER: _ClassVar[int]
+    HTTP_SOURCE_FIELD_NUMBER: _ClassVar[int]
+    STREAM_SOURCE_FIELD_NUMBER: _ClassVar[int]
+    HTTP_CONTENT_ENCODING_FIELD_NUMBER: _ClassVar[int]
     capture_id: _common_pb2.CaptureId
     connection_id: bytes
     session_id: bytes
@@ -71,4 +75,7 @@ class RawCaptureEvent(_message.Message):
     exchange_timestamp_ns: int
     venue_event_id: bytes
     processing_context: _common_pb2.ProcessingContext
-    def __init__(self, capture_id: _Optional[_Union[_common_pb2.CaptureId, _Mapping]] = ..., connection_id: _Optional[bytes] = ..., session_id: _Optional[bytes] = ..., transport: _Optional[str] = ..., source: _Optional[str] = ..., endpoint: _Optional[str] = ..., channel: _Optional[str] = ..., receive_timestamp_ns: _Optional[int] = ..., monotonic_ns_since_collector_start: _Optional[int] = ..., payload_kind: _Optional[_Union[PayloadKind, str]] = ..., payload_length: _Optional[int] = ..., raw_content_hash: _Optional[bytes] = ..., exchange_timestamp_ns: _Optional[int] = ..., venue_event_id: _Optional[bytes] = ..., processing_context: _Optional[_Union[_common_pb2.ProcessingContext, _Mapping]] = ...) -> None: ...
+    http_source: _source_pb2.HttpSourceContext
+    stream_source: _source_pb2.StreamSourceContext
+    http_content_encoding: bytes
+    def __init__(self, capture_id: _Optional[_Union[_common_pb2.CaptureId, _Mapping]] = ..., connection_id: _Optional[bytes] = ..., session_id: _Optional[bytes] = ..., transport: _Optional[str] = ..., source: _Optional[str] = ..., endpoint: _Optional[str] = ..., channel: _Optional[str] = ..., receive_timestamp_ns: _Optional[int] = ..., monotonic_ns_since_collector_start: _Optional[int] = ..., payload_kind: _Optional[_Union[PayloadKind, str]] = ..., payload_length: _Optional[int] = ..., raw_content_hash: _Optional[bytes] = ..., exchange_timestamp_ns: _Optional[int] = ..., venue_event_id: _Optional[bytes] = ..., processing_context: _Optional[_Union[_common_pb2.ProcessingContext, _Mapping]] = ..., http_source: _Optional[_Union[_source_pb2.HttpSourceContext, _Mapping]] = ..., stream_source: _Optional[_Union[_source_pb2.StreamSourceContext, _Mapping]] = ..., http_content_encoding: _Optional[bytes] = ...) -> None: ...

@@ -412,6 +412,27 @@ pub fn verify_segment(path: &Path, limits: Limits) -> Result<SealedSegment> {
     Ok(actual)
 }
 
+/// Sync directory entries on POSIX. On Windows, only validate the directory:
+/// directory fsync is not supported here, so Windows callers must not claim
+/// the POSIX directory-entry durability guarantee. File syncs remain required.
+pub fn sync_dir(path: &Path) -> io::Result<()> {
+    #[cfg(not(windows))]
+    {
+        File::open(path)?.sync_all()
+    }
+    #[cfg(windows)]
+    {
+        if fs::metadata(path)?.is_dir() {
+            Ok(())
+        } else {
+            Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "directory path is not a directory",
+            ))
+        }
+    }
+}
+
 fn publish_seal(segment: &SealedSegment) -> Result<()> {
     let directory = segment
         .path
@@ -435,7 +456,7 @@ fn publish_seal(segment: &SealedSegment) -> Result<()> {
         return Err(io::Error::new(io::ErrorKind::AlreadyExists, "seal exists").into());
     }
     fs::rename(partial, final_path)?;
-    File::open(directory)?.sync_all()?;
+    sync_dir(directory)?;
     Ok(())
 }
 
@@ -447,7 +468,7 @@ pub fn recover_seal(path: &Path, limits: Limits) -> Result<SealedSegment> {
         return verify_segment(path, limits);
     }
     let actual = actual_segment(path, SealOrigin::Recovered, limits)?;
-    File::open(path)?.sync_all()?;
+    OpenOptions::new().write(true).open(path)?.sync_all()?;
     // Only explicit recovery can remove incomplete evidence, after data validation.
     match fs::remove_file(path.with_file_name("seal.partial")) {
         Ok(()) => (),
@@ -471,6 +492,35 @@ pub struct SegmentWriter {
 }
 
 impl SegmentWriter {
+    pub fn byte_length(&self) -> u64 {
+        self.bytes
+    }
+
+    pub fn record_count(&self) -> u64 {
+        self.count
+    }
+
+    /// Group durability fence on an OPEN segment; not a seal or a power-loss claim.
+    pub fn durability_fence(&mut self) -> Result<()> {
+        if self.state != RawSegmentState::Open {
+            return Err(format_error("SEGMENT_NOT_OPEN", self.bytes));
+        }
+        let result = (|| -> Result<()> {
+            let file = self
+                .file
+                .as_mut()
+                .ok_or_else(|| format_error("SEGMENT_NOT_OPEN", self.bytes))?;
+            file.flush()?;
+            file.sync_data()?;
+            sync_dir(&self.directory)?;
+            Ok(())
+        })();
+        if result.is_err() {
+            self.state = RawSegmentState::Failed;
+        }
+        result
+    }
+
     pub fn state(&self) -> RawSegmentState {
         self.state
     }
@@ -478,7 +528,7 @@ impl SegmentWriter {
     pub fn new(root: &Path, segment_id: Uuid, limits: Limits) -> Result<Self> {
         let directory = root.join(segment_id.to_string());
         fs::create_dir(&directory)?;
-        File::open(root)?.sync_all()?;
+        sync_dir(root)?;
         let partial_path = directory.join("capture.partial");
         let file = OpenOptions::new()
             .write(true)
@@ -542,7 +592,7 @@ impl SegmentWriter {
                 );
             }
             fs::rename(&self.partial_path, &path)?;
-            File::open(&self.directory)?.sync_all()?;
+            sync_dir(&self.directory)?;
             let (report, actual_hash, actual_bytes) = scan(&path, self.limits)?;
             let expected_hash: [u8; 32] = self.hash.clone().finalize().into();
             if actual_hash != expected_hash {
