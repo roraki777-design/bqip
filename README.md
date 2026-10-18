@@ -1,5 +1,9 @@
 # BQIP — Brief #001 contract kernel
 
+For the Brief #004 archive candidate, use the current
+[archive operations and validation guide](docs/archive/raw-archive-v1.md).
+The Foundation notes below are retained as historical documentation.
+
 **Status: BLOCKED pending independent acceptance, including a real CI run.**
 
 BQIP is a BTC quantitative data/research platform. Foundation supplies exact,
@@ -48,6 +52,7 @@ Tool binaries are prerequisites, not project build caches.
 From the root:
 
 ```bash
+export CARGO_TARGET_DIR="/tmp/bqip-target"
 python3 tools/generate_protobuf.py
 python3 tools/generate_protobuf.py --check
 git diff --exit-code -- python/src/bqip/v1

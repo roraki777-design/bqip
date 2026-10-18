@@ -191,12 +191,12 @@ pub struct RecoveryReport {
 }
 
 // Hash the exact bytes consumed by validation, without re-encoding any record.
-struct HashingReader {
-    file: File,
+struct HashingReader<R> {
+    file: R,
     hash: Sha256,
     bytes: u64,
 }
-impl Read for HashingReader {
+impl<R: Read> Read for HashingReader<R> {
     fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
         let count = self.file.read(buffer)?;
         self.hash.update(&buffer[..count]);
@@ -206,8 +206,11 @@ impl Read for HashingReader {
 }
 
 fn scan(path: &Path, limits: Limits) -> Result<(RecoveryReport, [u8; 32], u64)> {
+    scan_reader(File::open(path)?, limits)
+}
+fn scan_reader<R: Read>(file: R, limits: Limits) -> Result<(RecoveryReport, [u8; 32], u64)> {
     let mut source = HashingReader {
-        file: File::open(path)?,
+        file,
         hash: Sha256::new(),
         bytes: 0,
     };
@@ -309,7 +312,10 @@ fn read_seal(path: &Path) -> Result<SealedSegment> {
             Error::Io(error)
         }
     })?;
-    let text = std::str::from_utf8(&data).map_err(|_| format_error("INVALID_SEAL_JSON", 0))?;
+    read_seal_bytes(path, &data)
+}
+fn read_seal_bytes(path: &Path, data: &[u8]) -> Result<SealedSegment> {
+    let text = std::str::from_utf8(data).map_err(|_| format_error("INVALID_SEAL_JSON", 0))?;
     let body = manifests::parse_manifest(text).map_err(|_| format_error("INVALID_SEAL_JSON", 0))?;
     if manifests::canonical_bytes(&body)? != data {
         return Err(format_error("NON_CANONICAL_SEAL", 0));
@@ -390,6 +396,27 @@ fn actual_segment(path: &Path, origin: SealOrigin, limits: Limits) -> Result<Sea
 pub fn verify_segment(path: &Path, limits: Limits) -> Result<SealedSegment> {
     let expected = read_seal(path)?;
     let actual = actual_segment(path, expected.seal_origin, limits)?;
+    verify_expected(&expected, actual)
+}
+/// Exact-byte counterpart of disk validation; shares scanner, seal parser and comparison.
+pub fn verify_bytes(capture: &[u8], seal: &[u8], limits: Limits) -> Result<SealedSegment> {
+    let path = Path::new("capture.sealed");
+    let expected = read_seal_bytes(path, seal)?;
+    let (report, sha256, byte_length) = scan_reader(io::Cursor::new(capture), limits)?;
+    if let Some(code) = report.failure {
+        return Err(format_error(code, report.failure_offset.unwrap_or(0)));
+    }
+    let actual = SealedSegment {
+        path: path.to_owned(),
+        segment_id: report.segment_id,
+        sha256,
+        record_count: report.record_count,
+        byte_length,
+        seal_origin: expected.seal_origin,
+    };
+    verify_expected(&expected, actual)
+}
+fn verify_expected(expected: &SealedSegment, actual: SealedSegment) -> Result<SealedSegment> {
     for (different, code) in [
         (
             actual.segment_id != expected.segment_id,

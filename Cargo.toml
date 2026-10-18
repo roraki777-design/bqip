@@ -1,5 +1,5 @@
 [workspace]
-members = ["rust/crates/bqip-contracts", "rust/crates/bqip-capture-format", "rust/crates/bqip-binance-collector"]
+members = ["rust/crates/bqip-raw-archive", "rust/crates/bqip-contracts", "rust/crates/bqip-capture-format", "rust/crates/bqip-binance-collector"]
 resolver = "2"
 
 [workspace.package]
@@ -21,6 +21,8 @@ tokio = { version = "=1.48.0", default-features = false, features = ["rt-multi-t
 tokio-tungstenite = { version = "=0.30.0", default-features = false, features = ["handshake"] }
 futures-util = { version = "=0.3.31", default-features = false, features = ["std", "sink"] }
 reqwest = { version = "=0.12.28", default-features = false, features = ["rustls-tls-webpki-roots"] }
+
+object_store = { version = "=0.14.2", default-features = false, features = ["aws"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

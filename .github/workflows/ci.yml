@@ -10,6 +10,9 @@ jobs:
   contracts:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      # Keep dependency build metadata outside the source/evidence secret scan.
+      CARGO_TARGET_DIR: ${{ runner.temp }}/bqip-target
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
