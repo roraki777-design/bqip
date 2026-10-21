@@ -1,0 +1,14 @@
+{
+  "schema": "BQIP-NORMALIZER-CONFIG-V1",
+  "venue_profile_id": "BINANCE-USD_M_FUTURES-BTCUSDT-PERPETUAL-v1",
+  "venue": "BINANCE",
+  "product_family": "USD_M_FUTURES",
+  "instrument_id": "BINANCE:USD_M_FUTURES:BTCUSDT",
+  "schema_version": 1,
+  "metadata_policy": "CORRECTED_RESEARCH_T_V1",
+  "normalizer_policy": "BINANCE_TYPED_SOURCE_V1",
+  "max_segment_bytes": 67108864,
+  "max_segments": 4096,
+  "max_metadata_versions": 4096,
+  "max_metadata_bytes": 16777216
+}

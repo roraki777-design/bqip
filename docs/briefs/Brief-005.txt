@@ -1,0 +1,2914 @@
+BQIP — IMPLEMENTATION BRIEF #005
+DETERMINISTIC REPLAY + CANONICAL NORMALIZATION KERNEL
+
+VERSION-PINNED RESEARCH REPLAY
++ FORENSIC REPLAY GUARDRAILS
++ POINT-IN-TIME METADATA RESOLUTION
++ DETERMINISM TRANSCRIPT
+
+============================================================
+0. ROLE
+============================================================
+
+You are the Principal Implementation Engineer for BQIP.
+
+Your responsibility is implementation only:
+
+BUILD
+→ VERIFY
+→ FIX
+→ REPEAT
+→ REPORT
+
+You are NOT the Architecture Lead.
+
+Do not redesign BQIP.
+Do not reopen accepted briefs.
+Do not silently redefine canonical contracts.
+Do not expand scope.
+Do not start Brief #006.
+
+If this brief conflicts with a frozen architecture invariant,
+accepted contract, source-of-truth rule, replay guarantee or current
+accepted implementation:
+
+STOP.
+
+Report the exact conflict.
+
+End with:
+
+BRIEF #005 BLOCKED — AWAITING ARCHITECT DECISION
+
+
+============================================================
+1. AUTHORITATIVE STATE
+============================================================
+
+Architecture:
+
+BQIP Master Architecture Specification v1.0 — FROZEN
+
+Brief #001:
+ACCEPTED / CLOSED
+
+Brief #002:
+ACCEPTED / CLOSED
+
+Brief #003:
+ACCEPTED / MERGED / CLOSED
+
+Brief #004:
+ACCEPTED / MERGED / CLOSED
+
+Canonical accepted implementation SHA #004:
+
+269e8b44799fbf7b6d234935132bebb4666d6957
+
+Current integrated baseline:
+
+c67481d339b5779e1a18fb95bf3d2b74ae8dcd10
+
+Authoritative integration branch:
+
+origin/brief-001
+
+Brief #005 MUST begin from exactly:
+
+c67481d339b5779e1a18fb95bf3d2b74ae8dcd10
+
+Create:
+
+brief-005
+
+Do not branch directly from the #004 implementation SHA.
+
+Do not rewrite accepted history.
+
+
+============================================================
+2. PHASE POSITION
+============================================================
+
+BQIP remains inside:
+
+PHASE 2 — BINANCE DATA PROOF
+
+Brief #005 does NOT start Phase 3.
+
+Deribit is NOT authorized.
+
+The current conceptual pipeline is:
+
+BINANCE
+  ↓
+#003 RAW CAPTURE
+  ↓
+SEALED BQRC v2
+  ↓
+#004 IMMUTABLE REMOTE ARCHIVE
+  ↓
+#005 DETERMINISTIC REPLAY
+  ↓
+#005 NORMALIZATION KERNEL
+  ↓
+[future #006 BOOK SERVICE]
+
+
+============================================================
+3. PRIMARY OBJECTIVE
+============================================================
+
+Implement a deterministic offline replay and normalization kernel
+for accepted Binance BTCUSDT USDⓈ-M perpetual RAW evidence.
+
+Given:
+
+same accepted RAW evidence
++
+same normalizer implementation commit
++
+same dependency lock
++
+same venue profile
++
+same metadata catalog
++
+same replay policy/config
++
+same input ordering manifest
+
+the implementation must reproduce the same semantic normalized
+outcomes and the same deterministic replay transcript digest.
+
+#005 transforms trustworthy RAW evidence into deterministic
+normalized market observations.
+
+It does NOT build market state.
+
+
+============================================================
+4. FROZEN PRINCIPLES
+============================================================
+
+Preserve at minimum:
+
+P1  Data Integrity > Models
+P2  Raw Means Raw
+P3  Three Clocks
+P4  Determinism
+P6  Replayability
+P7  Research != Production
+P8  Optimize After Measurement
+P9  Observables != Inferences
+P10 Preserve Optionality
+P11 Preservation Independence
+P12 Validation Blindness
+
+Especially:
+
+P4:
+same pinned transformation inputs must reproduce the same
+deterministic transformation semantics.
+
+P6:
+VERSION_PINNED_RESEARCH and AS_LIVED_FORENSIC are distinct
+guarantees.
+
+Never conflate them.
+
+
+============================================================
+5. SCOPE
+============================================================
+
+IN SCOPE:
+
+- read accepted sealed BQRC v2 evidence;
+- verify local RAW before replay;
+- deterministic record traversal;
+- explicit multi-segment replay planning;
+- Binance raw payload classification;
+- accepted Binance parsing;
+- capture identity preservation;
+- venue event identity preservation;
+- logical identity preservation/generation using accepted recipes;
+- point-in-time InstrumentMetadata resolution;
+- canonical normalization envelope;
+- deterministic error/rejection accounting;
+- schema drift accounting;
+- quality propagation;
+- deterministic replay transcript;
+- repeatability digest;
+- version-pinned research replay;
+- forensic replay eligibility checks;
+- replay/normalizer benchmark;
+- golden vectors;
+- real accepted #003 replay smoke if evidence is available.
+
+OUT OF SCOPE:
+
+- Canonical Book Service;
+- LOB reconstruction;
+- BUFFER/SNAPSHOT/BRIDGE state machine;
+- HEALTHY/DEGRADED book state;
+- shadow validator;
+- realtime normalizer deployment;
+- JetStream;
+- NATS;
+- Parquet;
+- DuckDB;
+- ClickHouse;
+- dataset persistence;
+- FeatureContract computation;
+- CVD;
+- imbalance;
+- microprice;
+- research;
+- event studies;
+- strategies;
+- account state;
+- execution;
+- private exchange endpoints;
+- Deribit;
+- modifications to RAW evidence;
+- remote object-storage retrieval;
+- cloud credentials.
+
+
+============================================================
+6. CRITICAL BOUNDARY — NO BOOK SERVICE
+============================================================
+
+Normalization is NOT reconstruction.
+
+Do NOT:
+
+apply depth updates into a persistent LOB
+perform snapshot bridging
+maintain BBO
+emit BookState
+declare HEALTHY
+declare canonical realtime state
+perform independent book validation
+
+Those belong to Brief #006.
+
+#005 may normalize:
+
+TradeEvent
+BinanceDepthUpdate
+BinanceDepthSnapshot
+InstrumentMetadataVersion
+
+using existing accepted contracts.
+
+
+============================================================
+7. PROTOBUF CHANGE CONTROL
+============================================================
+
+Default decision:
+
+NO Protobuf changes in Brief #005.
+
+Do NOT add:
+
+BookUpdateEvent
+BookSyncSnapshot
+new canonical common fields
+new identity fields
+new market wire contracts
+
+merely because the Master Architecture uses those conceptual names.
+
+The accepted repository already contains frozen/accepted venue contracts.
+
+#005 must first implement against them.
+
+If the implementation cannot satisfy this Brief without modifying a
+canonical Protobuf contract:
+
+STOP.
+
+Report:
+
+B5-01 — CANONICAL CONTRACT REPRESENTATION BLOCKER
+
+Do not modify proto until Architecture Lead adjudication.
+
+
+============================================================
+8. CANONICAL NORMALIZATION ENVELOPE
+============================================================
+
+Implement an INTERNAL Rust normalization envelope.
+
+It is NOT:
+
+- a new Protobuf contract;
+- a persisted analytical dataset;
+- a replacement for canonical schemas;
+- a new source of truth.
+
+Suggested conceptual shape:
+
+CanonicalNormalizedEvent {
+    source_segment_id
+    source_record_index
+
+    capture_id
+    raw_content_hash
+
+    venue
+    instrument_id
+
+    event_kind
+
+    metadata_version
+    metadata_resolution_basis
+
+    replay_mode
+    normalizer_commit
+    schema_version
+
+    original_receive_timestamp_ns
+    original_monotonic_ns
+
+    processing_context
+
+    quality_codes
+    schema_drift_paths
+
+    payload
+}
+
+payload is one accepted typed value:
+
+TradeEvent
+BinanceDepthUpdate
+BinanceDepthSnapshot
+
+Metadata observations are represented separately as accepted
+InstrumentMetadataVersion.
+
+Exact Rust naming may differ.
+
+Do not serialize this envelope as a new canonical wire protocol.
+
+
+============================================================
+9. NEW CRATE
+============================================================
+
+Add exactly one new Rust crate:
+
+rust/crates/bqip-normalizer
+
+Library:
+normalization/replay core.
+
+CLI binary:
+bqip-replay
+
+Suggested modules:
+
+src/lib.rs
+src/error.rs
+src/input.rs
+src/plan.rs
+src/classify.rs
+src/normalize.rs
+src/metadata.rs
+src/transcript.rs
+src/report.rs
+src/main.rs
+
+tests/
+
+Exact decomposition may differ if justified.
+
+Do not create multiple new services.
+
+
+============================================================
+10. DEPENDENCIES
+============================================================
+
+Default authorization:
+
+NO new third-party dependency family.
+
+Reuse accepted workspace dependencies and internal crates:
+
+bqip-contracts
+bqip-capture-format
+prost
+serde
+serde_json
+sha2
+uuid
+
+Use std where sufficient.
+
+Do NOT introduce:
+
+Arrow
+Parquet
+Polars
+DuckDB
+NATS
+JetStream
+database clients
+rayon
+async-trait
+new HTTP clients
+cloud SDKs
+compression libraries
+
+without Architecture Lead approval.
+
+If a genuinely required new dependency is discovered:
+
+STOP.
+
+Report dependency name, purpose, MSRV and alternatives.
+
+
+============================================================
+11. RUST TOOLCHAIN
+============================================================
+
+Frozen toolchain remains:
+
+Rust 1.85.0
+
+Required:
+
+rustfmt
+clippy
+locked dependency graph
+
+No toolchain upgrade.
+
+
+============================================================
+12. INPUT SOURCE
+============================================================
+
+#005 consumes local accepted BQRC evidence.
+
+No remote archive download is implemented.
+
+Valid replay input is a locally accessible copy of:
+
+capture.sealed
+seal.json
+manifest.json
+
+from accepted #003/#004-compatible evidence.
+
+
+============================================================
+13. INPUT VALIDATION
+============================================================
+
+Every segment must be fully revalidated before replay.
+
+Use the accepted shared validators.
+
+Required:
+
+BQRC magic/version
+header CRC
+record framing
+record CRCs
+record count
+byte length
+segment SHA-256
+seal
+manifest
+segment identity
+seal ↔ segment consistency
+manifest ↔ seal consistency
+
+Do not trust filenames alone.
+
+If validation fails:
+
+SEGMENT_SOURCE_INVALID
+
+Zero normalized output for that segment.
+
+
+============================================================
+14. RAW IMMUTABILITY
+============================================================
+
+#005 has READ-ONLY access to RAW evidence.
+
+It MUST NOT modify:
+
+capture.sealed
+seal.json
+manifest.json
+BQRC bytes
+source directory contents
+
+Do not rewrite RAW metadata.
+
+Do not append replay state into the RAW directory.
+
+
+============================================================
+15. REPLAY STATE DIRECTORY
+============================================================
+
+If operational replay artifacts need persistence, use a separate:
+
+replay_state_root
+
+Never write them into the source RAW segment directory.
+
+
+============================================================
+16. RECORD ACCOUNTING INVARIANT
+============================================================
+
+Every BQRC input record must produce exactly one deterministic replay
+outcome.
+
+Allowed high-level outcomes:
+
+NORMALIZED_MARKET_EVENT
+METADATA_OBSERVATION
+REJECTED
+
+No silent drop.
+
+For every replay run:
+
+input_record_count
+==
+normalized_count
++ metadata_observation_count
++ rejected_count
+
+This equality is mandatory.
+
+
+============================================================
+17. NO SILENT DEDUPLICATION
+============================================================
+
+Capture observations are observations.
+
+Do NOT deduplicate merely because two records have the same
+logical_event_id.
+
+Different capture_id values remain distinct observations.
+
+If the same economic event was captured twice:
+
+preserve both observations
+preserve the same logical identity where the accepted identity recipe
+requires it.
+
+Dataset-level deduplication is future work.
+
+
+============================================================
+18. CAPTURE ID
+============================================================
+
+Replay MUST preserve original capture_id.
+
+Do NOT:
+
+call CaptureSequencer
+generate a new collector UUID
+generate a new capture_seq
+replace capture identity
+
+Replay does not become a new market observation.
+
+
+============================================================
+19. SESSION ID
+============================================================
+
+For stream events:
+
+use original session identity from RAW lineage.
+
+Especially for Binance depth identity:
+
+never supply a replacement session.
+
+Same U/u on two original sessions may have distinct logical IDs.
+
+Preserve accepted #002 semantics.
+
+
+============================================================
+20. RAW HASH
+============================================================
+
+raw_content_hash remains:
+
+SHA-256(exact original payload bytes)
+
+Do not hash decoded/reformatted JSON.
+
+Do not use the normalized event as the RAW hash.
+
+
+============================================================
+21. INPUT ORDERING
+============================================================
+
+Filesystem enumeration order is NOT replay order.
+
+Implement an explicit ReplayPlan.
+
+The plan defines an ordered list of exact input segments.
+
+Within a segment:
+
+preserve BQRC record order.
+
+Across segments:
+
+use only ReplayPlan order.
+
+Do NOT infer economic cross-lane ordering.
+
+
+============================================================
+22. CROSS-LANE ORDERING CLAIM
+============================================================
+
+A ReplayPlan ordering across:
+
+depth_ws
+aggtrade_ws
+rest
+
+is an operational deterministic traversal order only.
+
+It does NOT mean:
+
+economic causality
+exchange total order
+wire total order
+market total order
+
+Document this explicitly.
+
+
+============================================================
+23. REPLAY PLAN V1
+============================================================
+
+Introduce an OPERATIONAL JSON contract:
+
+BQIP-REPLAY-PLAN-V1
+
+This is not a canonical market-data contract.
+
+Required stable fields:
+
+schema
+replay_mode
+
+venue_profile_id
+venue_profile_hash
+
+normalizer_commit
+normalizer_config_hash
+
+ordered_segments[]:
+    relative_path
+    segment_id
+    capture_sha256
+    seal_sha256
+    manifest_sha256
+    record_count
+
+No timestamps generated at plan execution may participate in plan
+determinism.
+
+Use the existing restricted JCS/manifest hashing implementation.
+
+Define:
+
+plan_hash =
+SHA256(
+    restricted canonical JCS representation
+    with plan_hash and comments omitted
+)
+
+
+============================================================
+24. PLAN PATH SAFETY
+============================================================
+
+ReplayPlan segment paths must be relative to a configured source root.
+
+Reject:
+
+absolute paths
+..
+path escape
+backslashes where platform rules make interpretation ambiguous
+symlink escape
+
+No replay input may resolve outside the allowed source root.
+
+
+============================================================
+25. DUPLICATE INPUT SEGMENTS
+============================================================
+
+A ReplayPlan containing the same segment_id more than once is invalid.
+
+Return:
+
+DUPLICATE_REPLAY_SEGMENT
+
+Do not silently process it twice.
+
+
+============================================================
+26. PLAN VERIFICATION
+============================================================
+
+Before processing any record:
+
+recompute all input hashes.
+
+They must exactly equal ReplayPlan.
+
+Any mismatch:
+
+REPLAY_INPUT_CHANGED
+
+Fail closed.
+
+
+============================================================
+27. NORMALIZER CONFIG
+============================================================
+
+Add a versioned non-secret config, e.g.:
+
+config/runtime/binance-btcusdt-normalizer-v1.json
+
+It may pin:
+
+venue profile ID
+allowed venue
+allowed product family
+allowed instrument
+allowed lane/channel mappings
+schema version
+metadata resolution policy version
+normalizer policy version
+
+No wall-clock-dependent configuration.
+
+
+============================================================
+28. CONFIG HASH
+============================================================
+
+normalizer_config_hash is SHA-256 over the accepted restricted
+canonical JSON representation.
+
+No environment-specific filesystem path may influence this hash.
+
+
+============================================================
+29. NORMALIZER COMMIT
+============================================================
+
+Every run must record the exact normalizer implementation commit.
+
+Use the accepted build identity pattern already established in the repo.
+
+If build commit resolves to:
+
+UNVERIFIED
+
+the replay CLI must refuse to claim deterministic acceptance unless
+an exact explicit BQIP_BUILD_COMMIT is supplied and validated.
+
+Do not accept abbreviated SHA as canonical provenance.
+
+
+============================================================
+30. REPLAY MODES
+============================================================
+
+Existing ReplayMode semantics remain authoritative:
+
+LIVE
+VERSION_PINNED_RESEARCH
+AS_LIVED_FORENSIC
+
+Replay CLI MUST reject:
+
+LIVE
+
+because this is an offline replay command.
+
+Operational #005 support:
+
+VERSION_PINNED_RESEARCH:
+SUPPORTED
+
+AS_LIVED_FORENSIC:
+GUARDED / FAIL-CLOSED unless sufficient forensic provenance exists.
+
+
+============================================================
+31. VERSION-PINNED RESEARCH REPLAY
+============================================================
+
+VERSION_PINNED_RESEARCH means:
+
+selected exact RAW evidence
++
+selected current/corrected pinned normalizer commit
++
+selected pinned config
++
+selected pinned metadata catalog
++
+selected profile/schema versions
+
+It MAY intentionally use corrected current code.
+
+It must never be labeled:
+
+AS_LIVED_FORENSIC.
+
+
+============================================================
+32. AS-LIVED FORENSIC REPLAY
+============================================================
+
+Do NOT claim as-lived forensic reconstruction merely because RAW exists.
+
+Full forensic replay requires enough evidence to prove the exact artifacts
+and decision context BQIP used at historical time T.
+
+If required operational/deployment provenance is absent:
+
+return:
+
+FORENSIC_PROVENANCE_INSUFFICIENT
+
+This is a correct result.
+
+Do NOT silently fall back to research replay.
+
+
+============================================================
+33. HISTORICAL #003 DATA
+============================================================
+
+Do NOT automatically label the existing #003 live-smoke RAW:
+
+AS_LIVED_FORENSIC
+
+because the future #005 normalizer did not exist as a deployed normalizer
+during that historical capture.
+
+The #003 artifact may be used as:
+
+real RAW parser/replay evidence
+version-pinned research input
+determinism evidence
+
+but not as proof of historical #005 as-lived belief.
+
+
+============================================================
+34. FORENSIC GUARD TEST
+============================================================
+
+Mandatory:
+
+attempt AS_LIVED_FORENSIC replay without complete forensic artifact
+provenance.
+
+Expected:
+
+FORENSIC_PROVENANCE_INSUFFICIENT
+
+No output may be mislabeled forensic.
+
+
+============================================================
+35. PROCESSING CONTEXT
+============================================================
+
+ProcessingContext is operational provenance.
+
+A replay run may have a new:
+
+processing_timestamp_ns
+run_id
+
+Those fields are NOT original market facts.
+
+They must not change:
+
+capture_id
+venue_event_id
+logical_event_id
+raw_content_hash
+original receive timestamp
+
+
+============================================================
+36. DETERMINISM AND PROCESSING TIME
+============================================================
+
+processing_timestamp_ns and run_id are intentionally different on
+different executions.
+
+Therefore they MUST be excluded from the deterministic transcript
+core hash.
+
+Document the distinction between:
+
+deterministic transformation semantics
+
+and:
+
+runtime execution provenance.
+
+
+============================================================
+37. THREE CLOCKS
+============================================================
+
+Preserve, where available:
+
+exchange/event time
+original receive time
+current processing time
+
+Also preserve the original collector monotonic timestamp as lineage
+where available.
+
+Do NOT derive:
+
+receive - exchange
+=
+network latency
+
+Do not rewrite original clocks.
+
+
+============================================================
+38. BINANCE PAYLOAD CLASSIFICATION
+============================================================
+
+Classify using accepted typed transport evidence, endpoint/channel and
+payload semantics.
+
+Current accepted classes:
+
+WS aggTrade
+WS depthUpdate
+REST depth snapshot
+REST exchangeInfo
+
+Do not classify only from a substring in raw payload.
+
+
+============================================================
+39. UNKNOWN SOURCE CLASS
+============================================================
+
+If RAW is structurally valid but source/endpoint/channel cannot be mapped
+to an authorized #005 normalizer:
+
+REJECTED
+UNSUPPORTED_RAW_SOURCE
+
+Do not guess.
+
+
+============================================================
+40. AGGTRADE NORMALIZATION
+============================================================
+
+Reuse the accepted Binance aggTrade parser and identity recipe.
+
+Output payload:
+
+TradeEvent
+
+Preserve:
+
+instrument_id
+venue_event_id
+logical_event_id
+price
+quantity
+quantity_ex_rpi
+event/trade timestamps
+native timestamps
+aggressor
+granularity
+aggregate_id
+first/last venue trade IDs
+buyer_is_maker
+liquidation observation
+source lineage
+
+Do not reinterpret aggTrade as individual fills.
+
+
+============================================================
+41. AGGTRADE IDENTITY
+============================================================
+
+Use the accepted #002 logical identity.
+
+Do not create a new trade identity recipe.
+
+Do not include:
+
+capture ID
+receive timestamp
+RAW hash
+processing timestamp
+
+in the logical event identity unless already mandated by the accepted
+recipe.
+
+
+============================================================
+42. DEPTH UPDATE NORMALIZATION
+============================================================
+
+Reuse accepted Binance depth parser.
+
+Output payload:
+
+BinanceDepthUpdate
+
+Preserve:
+
+U
+u
+pu
+E
+T
+exact decimal levels
+logical_event_id
+original session lineage
+
+Do NOT apply the update to a book.
+
+
+============================================================
+43. DEPTH IDENTITY
+============================================================
+
+Use accepted #002 depth identity:
+
+session-scoped
++
+U/u
+
+Do not change the identity recipe.
+
+Do not cross-session deduplicate.
+
+
+============================================================
+44. DEPTH SNAPSHOT NORMALIZATION
+============================================================
+
+Reuse the accepted Binance REST depth snapshot parser.
+
+Output payload:
+
+BinanceDepthSnapshot
+
+This is a synchronization anchor observation.
+
+Do NOT turn it into:
+
+BookState
+healthy book
+canonical LOB
+
+in #005.
+
+
+============================================================
+45. EXCHANGEINFO NORMALIZATION
+============================================================
+
+Successful accepted exchangeInfo RAW creates:
+
+InstrumentMetadataVersion
+
+using the accepted parser and temporal semantics.
+
+Do not infer economic effective time.
+
+Observed exchangeInfo remains:
+
+effective_time_basis = UNKNOWN
+
+unless an independently justified accepted confirmation exists.
+
+
+============================================================
+46. METADATA VERSION ID
+============================================================
+
+Replay of an accepted exchangeInfo observation must regenerate the SAME
+metadata observation version identity as the accepted collector semantics.
+
+Current accepted form derives from the original capture identity.
+
+Do not generate random metadata versions.
+
+If necessary, extract the existing collector recipe into a shared helper
+without changing its byte/string result.
+
+Regression-test exact historical vectors.
+
+
+============================================================
+47. METADATA IMMUTABILITY
+============================================================
+
+Metadata history is append-only.
+
+Replay must not mutate previous InstrumentMetadataVersion entries.
+
+Do not rewrite UNKNOWN evidence into confirmed evidence.
+
+
+============================================================
+48. METADATA CATALOG
+============================================================
+
+Use the existing immutable MetadataCatalog implementation.
+
+#005 library API may accept a caller-supplied MetadataCatalog.
+
+The replay CLI may construct a catalog from replay-visible accepted
+metadata observations.
+
+Do not create an unrelated second metadata resolver.
+
+
+============================================================
+49. METADATA RESOLUTION — RESEARCH
+============================================================
+
+VERSION_PINNED_RESEARCH uses:
+
+ResolverMode::CorrectedResearch
+
+Do NOT silently fall back to AS_LIVED behavior.
+
+If current catalog contains only UNKNOWN-effective evidence and corrected
+resolution cannot establish the economic interval:
+
+return the accepted metadata error, including:
+
+METADATA_EFFECTIVE_TIME_UNKNOWN
+
+That is correct fail-closed behavior.
+
+
+============================================================
+50. METADATA RESOLUTION — AS LIVED
+============================================================
+
+Where as-lived metadata semantics are tested:
+
+ResolverMode::AsLived
+
+as_of MUST be:
+
+the original event receive timestamp
+
+NOT:
+
+replay execution time
+current wall clock
+processing timestamp
+
+
+============================================================
+51. KNOWLEDGE-ONLY METADATA
+============================================================
+
+If the accepted resolver returns:
+
+MetadataResolutionBasis::KnowledgeOnly
+
+preserve that basis explicitly.
+
+Preserve quality:
+
+METADATA_EFFECTIVE_TIME_UNKNOWN
+
+Do not relabel it as economically confirmed.
+
+
+============================================================
+52. METADATA AMBIGUITY
+============================================================
+
+METADATA_AMBIGUOUS is fatal for normalization of that event.
+
+Do not pick:
+
+latest timestamp
+largest metadata_version
+input order winner
+
+No arbitrary tie breaking.
+
+
+============================================================
+53. METADATA EVENT-TIME BASIS
+============================================================
+
+Implementation decision for #005:
+
+for aggTrade metadata economic-time lookup:
+use trade_timestamp_ns (Binance T)
+
+for depth update:
+use transaction_timestamp_ns (Binance T)
+
+for depth snapshot:
+use transaction_timestamp_ns (Binance T)
+
+Reason:
+these are the accepted transaction/trade-time fields associated with the
+economic observation.
+
+This is a #005 implementation policy, not a claim of universal cross-venue
+time semantics.
+
+Document it in normalizer config and tests.
+
+If an accepted event lacks the required timestamp:
+
+METADATA_EVENT_TIME_MISSING
+
+
+============================================================
+54. SOURCE RECEIVE TIME
+============================================================
+
+Metadata AS_LIVED as_of always uses the original:
+
+SourceLineage.receive_timestamp_ns
+
+Do not substitute event timestamp.
+
+
+============================================================
+55. SCHEMA DRIFT
+============================================================
+
+Accepted Binance parsers return unknown additive JSON drift paths.
+
+Preserve them.
+
+Sort deterministically.
+
+Unknown fields:
+
+do not receive invented semantics
+do not disappear from diagnostics
+
+Known valid additive fields should not automatically make an event fail
+if accepted #002 parser semantics permit them.
+
+
+============================================================
+56. QUALITY CODES
+============================================================
+
+#005 may use INTERNAL stable string quality codes in replay transcript.
+
+They are not new canonical Protobuf enums.
+
+Examples:
+
+METADATA_EFFECTIVE_TIME_UNKNOWN
+SCHEMA_DRIFT_OBSERVED
+RAW_LOSS_RECORDED
+
+Do not invent market meaning.
+
+Do not modify canonical QualityEvent proto merely for #005.
+
+
+============================================================
+57. RAW LOSS / QUALITY PROPAGATION
+============================================================
+
+A sealed RAW segment may explicitly record loss/quality degradation.
+
+Replay may continue if the evidence itself is structurally valid.
+
+Preserve explicit loss status in replay/report lineage.
+
+Do not pretend the dataset is complete.
+
+Do not synthesize missing events.
+
+
+============================================================
+58. CONTENT ENCODING
+============================================================
+
+If an HTTP RAW record declares non-identity content encoding and accepted
+parser semantics cannot directly interpret the exact stored body:
+
+REJECTED
+UNSUPPORTED_CONTENT_ENCODING
+
+Do NOT add decompression libraries in #005.
+
+Do NOT rewrite RAW.
+
+
+============================================================
+59. PARSE FAILURE
+============================================================
+
+Malformed or semantically invalid payload:
+
+REJECTED
+
+with exact stable error code.
+
+Do not abort an entire otherwise valid replay plan merely because one
+market payload fails normalization, unless plan/config integrity itself
+is compromised.
+
+Continue deterministic record accounting.
+
+
+============================================================
+60. STRUCTURAL FAILURE VS RECORD REJECTION
+============================================================
+
+PLAN / SEGMENT failures:
+fail the run.
+
+Examples:
+
+segment hash mismatch
+invalid seal
+invalid manifest
+path escape
+duplicate segment
+invalid replay mode
+wrong normalizer commit
+
+RECORD failures:
+record deterministic REJECTED outcome and continue.
+
+Examples:
+
+malformed venue JSON
+profile mismatch
+metadata missing
+metadata ambiguous
+unsupported payload source
+
+
+============================================================
+61. NO CURRENT-WALL-CLOCK SEMANTICS
+============================================================
+
+Current wall clock may be used for operational report timestamps.
+
+It MUST NOT influence:
+
+normalized market values
+identity
+metadata selection
+replay ordering
+deterministic transcript digest
+
+
+============================================================
+62. NO RANDOMNESS IN DETERMINISTIC CORE
+============================================================
+
+run_id may be random operational provenance.
+
+No random value may influence:
+
+normalized event
+metadata result
+record outcome
+record ordering
+determinism hash
+
+
+============================================================
+63. REPLAY TRANSCRIPT
+============================================================
+
+Implement an operational deterministic transcript:
+
+BQIP-REPLAY-TRANSCRIPT-V1
+
+It is NOT:
+
+logical_event_id
+DatasetManifest
+canonical market source-of-truth
+Protobuf canonical encoding
+
+Its purpose is to prove replay repeatability.
+
+
+============================================================
+64. TRANSCRIPT ENTRY
+============================================================
+
+Each input record produces one ordered transcript entry containing at
+minimum:
+
+input_segment_ordinal
+segment_id
+record_index
+
+capture collector UUID
+capture_seq
+
+raw_content_hash
+
+source class/lane
+
+outcome
+
+event_kind when normalized
+
+venue_event_id when applicable
+logical_event_id when applicable
+
+metadata_version when resolved
+metadata_resolution_basis when resolved
+
+sorted quality codes
+sorted drift paths
+
+normalized_payload_digest when applicable
+
+stable rejection code when rejected
+
+
+============================================================
+65. NORMALIZED PAYLOAD DIGEST
+============================================================
+
+The normalized_payload_digest MAY use the accepted Rust Protobuf encoding
+of the typed normalized payload for SAME-IMPLEMENTATION repeatability.
+
+If used:
+
+SHA256(prost encoded normalized payload)
+
+BUT documentation MUST state:
+
+- this is NOT logical_event_id;
+- this is NOT a universal canonical Protobuf hash;
+- this is NOT guaranteed cross-language byte identity;
+- it is an implementation-pinned repeatability digest.
+
+Semantic tests must also compare decoded typed values.
+
+
+============================================================
+66. TRANSCRIPT DETERMINISTIC CORE
+============================================================
+
+The transcript deterministic core MUST exclude:
+
+run_id
+processing_timestamp_ns
+report creation time
+filesystem absolute paths
+host name
+CPU model
+temporary directories
+
+It MUST include all transformation-affecting pins.
+
+
+============================================================
+67. TRANSCRIPT HASH
+============================================================
+
+Define:
+
+transcript_hash =
+SHA256(
+    restricted canonical JCS representation
+    of deterministic replay transcript core
+    excluding transcript_hash and comments
+)
+
+Use existing manifest/JCS implementation.
+
+Do not create a second JSON canonicalizer.
+
+
+============================================================
+68. TRANSCRIPT PINS
+============================================================
+
+Transcript header must pin at minimum:
+
+schema
+plan_hash
+replay_mode
+normalizer_commit
+normalizer_config_hash
+venue_profile_id
+venue_profile_hash
+metadata_catalog_digest
+input record count
+ordered input segment hashes
+
+
+============================================================
+69. METADATA CATALOG DIGEST
+============================================================
+
+Need a deterministic semantic catalog digest for replay provenance.
+
+Do NOT hash arbitrary HashMap iteration order.
+
+Sort metadata entries deterministically by:
+
+instrument_id
+metadata_version
+
+Construct a restricted canonical representation of all resolution-relevant
+fields.
+
+Hash using existing JCS/SHA-256 machinery.
+
+This digest is replay provenance.
+
+It is NOT metadata_version itself.
+
+
+============================================================
+70. RUN REPORT
+============================================================
+
+Separate nondeterministic operational report:
+
+BQIP-REPLAY-RUN-V1
+
+May include:
+
+run_id
+start time
+end time
+host/process metrics
+processing timestamps
+counts
+plan_hash
+transcript_hash
+normalizer commit
+benchmark metrics
+
+Operational report fields are not part of replay determinism.
+
+
+============================================================
+71. OUTPUT PERSISTENCE LIMIT
+============================================================
+
+#005 MUST NOT introduce a normalized historical dataset format.
+
+Do not persist:
+
+Parquet
+Arrow
+database tables
+canonical normalized data lake
+
+The transcript/report may be persisted for verification.
+
+Canonical normalized events remain library outputs / bounded replay stream.
+
+Persistent analytical datasets belong to later Brief.
+
+
+============================================================
+72. STREAMING / MEMORY
+============================================================
+
+Replay must process BQRC records incrementally.
+
+Do not load an arbitrarily large set of RAW segments fully into RAM.
+
+Bound memory.
+
+Metadata catalog may remain in memory for current Binance scope.
+
+Transcript handling should be streaming or bounded where practical.
+
+
+============================================================
+73. TWO-PASS INPUT WHEN REQUIRED
+============================================================
+
+It is acceptable to use two deterministic passes:
+
+PASS 1:
+validate/discover metadata observations
+
+PASS 2:
+normalize market records
+
+provided:
+
+input segment hashes are pinned
+same validated bytes are used
+ordering remains explicit
+no future-knowledge semantics leak into AS_LIVED resolution
+
+Corrected research may intentionally use the complete pinned metadata catalog.
+
+
+============================================================
+74. NO LOOK-AHEAD VIA AS-LIVED CATALOG
+============================================================
+
+AS_LIVED metadata resolution may load a complete catalog into memory only
+because the resolver MUST enforce:
+
+known_from <= original receive time < known_to
+
+and supersession knowledge cutoffs.
+
+Tests must prove future-known corrections do not affect earlier
+AS_LIVED events.
+
+
+============================================================
+75. RESEARCH CORRECTION TEST
+============================================================
+
+Fixture:
+
+metadata v1 known earlier
+metadata v2 known later
+v2 explicitly supersedes v1
+v2 economically covers historical event
+
+Expected:
+
+VERSION_PINNED_RESEARCH may select corrected v2.
+
+AS_LIVED before v2 known_from must select v1.
+
+This distinction is mandatory.
+
+
+============================================================
+76. UNKNOWN EFFECTIVE-TIME TEST
+============================================================
+
+Use accepted Binance-style UNKNOWN metadata observation.
+
+Expected:
+
+CorrectedResearch:
+METADATA_EFFECTIVE_TIME_UNKNOWN
+
+AsLived:
+KnowledgeOnly
++
+METADATA_EFFECTIVE_TIME_UNKNOWN
+
+Do not project UNKNOWN metadata backward.
+
+
+============================================================
+77. AMBIGUOUS OVERLAP TEST
+============================================================
+
+Two unrelated eligible metadata observations.
+
+Expected:
+
+METADATA_AMBIGUOUS
+
+Input ordering must not determine the winner.
+
+
+============================================================
+78. DETERMINISM TEST — SAME RUN
+============================================================
+
+Execute identical ReplayPlan twice.
+
+Use different:
+
+run_id
+processing timestamp
+temporary output directory
+
+Required:
+
+same semantic normalized events
+same per-record outcomes
+same metadata resolutions
+same transcript_hash
+
+Operational run report bytes may differ.
+
+
+============================================================
+79. DETERMINISM TEST — CLEAN PROCESS
+============================================================
+
+Repeat identical replay in a fresh process / clean output directory.
+
+Required:
+
+same transcript_hash.
+
+
+============================================================
+80. DETERMINISM TEST — INPUT ORDER
+============================================================
+
+Same segments in a different ReplayPlan order:
+
+plan_hash must differ.
+
+Transcript traversal may differ.
+
+Do not claim equivalent transcript hash.
+
+Explicit plan order is part of deterministic replay input.
+
+
+============================================================
+81. DETERMINISM TEST — RAW BYTE CHANGE
+============================================================
+
+Change one RAW byte.
+
+Required:
+
+segment verification fails
+
+or raw hash/input hash changes.
+
+No old transcript hash may survive.
+
+
+============================================================
+82. DETERMINISM TEST — CONFIG CHANGE
+============================================================
+
+Change a transformation-relevant config field.
+
+Required:
+
+normalizer_config_hash changes
+transcript provenance changes.
+
+
+============================================================
+83. DETERMINISM TEST — METADATA CHANGE
+============================================================
+
+Add a legitimate corrected metadata version.
+
+Required:
+
+metadata_catalog_digest changes.
+
+Research replay output may change exactly where resolution semantics require.
+
+Old transcript must remain reproducible with the old catalog.
+
+
+============================================================
+84. DETERMINISM TEST — PROCESSING TIME
+============================================================
+
+Change only processing timestamp/run ID.
+
+Required:
+
+transcript_hash unchanged.
+
+
+============================================================
+85. IDENTITY CONSERVATION TEST
+============================================================
+
+Replay same raw trade twice.
+
+Required:
+
+same original capture_id
+same venue_event_id
+same logical_event_id
+
+No replay-generated capture identity.
+
+
+============================================================
+86. DEPTH SESSION TEST
+============================================================
+
+Same U/u payload semantics under two distinct original session IDs.
+
+Required:
+
+distinct accepted depth logical IDs.
+
+No cross-session collapse.
+
+
+============================================================
+87. DUPLICATE CAPTURE OBSERVATION TEST
+============================================================
+
+Two distinct capture IDs containing same accepted trade event.
+
+Required:
+
+two replay outcomes
+same logical economic identity
+different capture lineage
+
+No silent deduplication.
+
+
+============================================================
+88. UNKNOWN FIELD DRIFT TEST
+============================================================
+
+Add an accepted unknown JSON member.
+
+Required:
+
+known normalized semantics unchanged
+drift path recorded deterministically
+no invented meaning
+
+
+============================================================
+89. DUPLICATE JSON KEY TEST
+============================================================
+
+Duplicate JSON object key:
+
+accepted parser must reject.
+
+Replay records deterministic REJECTED outcome.
+
+
+============================================================
+90. NUMERIC SEMANTICS
+============================================================
+
+Reuse accepted DecimalValue parsing.
+
+No float conversion for:
+
+price
+quantity
+tick size
+lot size
+
+No exponent inputs.
+
+No noncanonical persisted decimal representation.
+
+
+============================================================
+91. EVENT SOURCE VALIDATION
+============================================================
+
+Normalizers must verify expected:
+
+venue
+profile ID/hash
+transport
+endpoint
+channel
+instrument
+
+A valid JSON body delivered under the wrong source context must fail:
+
+PROFILE_MISMATCH
+
+Do not classify solely from payload content.
+
+
+============================================================
+92. REPLAY PLAN PROFILE HASH
+============================================================
+
+ReplayPlan venue_profile_hash must equal the accepted committed Binance
+profile hash.
+
+A profile mismatch:
+
+REPLAY_PROFILE_MISMATCH
+
+Do not proceed.
+
+
+============================================================
+93. NORMALIZER COMMIT PIN TEST
+============================================================
+
+ReplayPlan normalizer_commit must equal the running binary's verified
+implementation commit for VERSION_PINNED_RESEARCH.
+
+Mismatch:
+
+NORMALIZER_COMMIT_MISMATCH
+
+Do not silently replay with a different executable.
+
+
+============================================================
+94. CONFIG PIN TEST
+============================================================
+
+ReplayPlan config hash must equal runtime loaded config.
+
+Mismatch:
+
+NORMALIZER_CONFIG_MISMATCH
+
+
+============================================================
+95. SCHEMA PIN
+============================================================
+
+The normalizer must record the exact accepted schema version used.
+
+Do not infer a future schema version.
+
+Any unsupported schema pin:
+
+UNSUPPORTED_SCHEMA_VERSION
+
+
+============================================================
+96. ERROR TAXONOMY
+============================================================
+
+Stable typed errors should distinguish at minimum:
+
+REPLAY_PLAN_INVALID
+REPLAY_INPUT_CHANGED
+DUPLICATE_REPLAY_SEGMENT
+SEGMENT_SOURCE_INVALID
+REPLAY_PROFILE_MISMATCH
+NORMALIZER_COMMIT_MISMATCH
+NORMALIZER_CONFIG_MISMATCH
+UNSUPPORTED_SCHEMA_VERSION
+
+UNSUPPORTED_RAW_SOURCE
+UNSUPPORTED_CONTENT_ENCODING
+PARSE_FAILURE
+PROFILE_MISMATCH
+METADATA_MISSING
+METADATA_AMBIGUOUS
+METADATA_EFFECTIVE_TIME_UNKNOWN
+METADATA_EVENT_TIME_MISSING
+
+FORENSIC_PROVENANCE_INSUFFICIENT
+
+Do not collapse every problem into "parse error".
+
+
+============================================================
+97. ERROR STABILITY
+============================================================
+
+Record-level rejection code must be deterministic.
+
+Do not include:
+
+OS path
+random UUID
+wall-clock timestamp
+full raw payload
+
+inside the deterministic rejection identity.
+
+
+============================================================
+98. RAW PAYLOAD LOGGING
+============================================================
+
+Do not log full raw market bodies by default.
+
+Evidence may identify:
+
+segment
+record index
+capture ID
+hash
+error code
+
+without duplicating market payload unnecessarily.
+
+
+============================================================
+99. SECURITY
+============================================================
+
+#005 requires no credentials.
+
+No network access is necessary for normal operation.
+
+No private API.
+
+No execution.
+
+Mandatory:
+
+cargo audit --deny warnings
+pip-audit --strict
+gitleaks
+
+No secret material in evidence.
+
+
+============================================================
+100. P11 REGRESSION
+============================================================
+
+#005 is offline/downstream.
+
+It must not change:
+
+collector RAW ACK path
+archive upload path
+RAW writer semantics
+#004 remote archive semantics
+
+No collector dependency on the normalizer.
+
+
+============================================================
+101. ACCEPTED #003/#004 REGRESSION
+============================================================
+
+All existing tests remain PASS.
+
+No change to:
+
+BQRC v2
+seal semantics
+manifest semantics
+remote archive receipt semantics
+create-only remote behavior
+accepted Binance identity recipes
+
+
+============================================================
+102. PROTOBUF REGENERATION
+============================================================
+
+Expected:
+
+NO proto changes.
+
+Still run generation/drift checks.
+
+If proto output changes unexpectedly:
+
+FAIL.
+
+
+============================================================
+103. GOLDEN FIXTURES
+============================================================
+
+Add deterministic fixtures covering:
+
+aggTrade
+depthUpdate
+depth snapshot
+exchangeInfo
+
+known-effective metadata
+UNKNOWN-effective metadata
+supersession
+metadata ambiguity
+schema drift
+malformed payload
+wrong endpoint
+wrong session
+duplicate logical event / distinct capture
+
+Expected values must be independently authored, not generated by the
+implementation under test.
+
+
+============================================================
+104. PROPERTY / FUZZ-LIKE TESTS
+============================================================
+
+Using existing proptest if useful, test bounded properties such as:
+
+Decimal normalization invariance
+replay never changes capture_id
+run_id never changes transcript hash
+input order explicitly changes plan identity
+metadata input ordering never picks ambiguous winner
+unknown additive JSON fields do not mutate known semantic fields
+
+Do not add fuzz framework dependency.
+
+
+============================================================
+105. REAL #003 REPLAY SMOKE
+============================================================
+
+If the previously accepted #003 live-smoke evidence is available externally,
+run #005 against a copy of those accepted sealed segments.
+
+Do NOT commit the live artifact.
+
+Expected historical artifact characteristics include:
+
+depth events
+aggTrade events
+REST exchangeInfo/depth snapshot evidence
+
+The exact current accepted #003 smoke previously contained:
+
+871 depth events
+1318 aggTrade events
+3 REST records
+
+for 2192 RAW records total.
+
+Verify actual source artifact before relying on those counts.
+
+
+============================================================
+106. REAL SMOKE — TWO RUNS
+============================================================
+
+Run the exact same ReplayPlan twice.
+
+Required:
+
+same input counts
+same outcome counts
+same per-record deterministic outcomes
+same transcript_hash
+same source hashes before/after
+
+Different operational run IDs/timestamps are allowed.
+
+
+============================================================
+107. REAL SMOKE — METADATA HONESTY
+============================================================
+
+Do NOT force a successful CorrectedResearch metadata result if the archived
+exchangeInfo evidence has UNKNOWN effective time.
+
+If VERSION_PINNED_RESEARCH correctly rejects market normalization because
+the pinned catalog cannot establish effective metadata:
+
+record that honestly.
+
+Use synthetic/golden confirmed metadata to prove the successful corrected
+normalization path.
+
+Do not fabricate economic metadata timestamps merely to make the smoke green.
+
+
+============================================================
+108. REAL SMOKE — PARSER COVERAGE
+============================================================
+
+Even if final canonical normalization is rejected by metadata resolution,
+report separately whether accepted raw parsing succeeded for:
+
+aggTrade
+depth update
+depth snapshot
+exchangeInfo
+
+This demonstrates RAW → typed venue normalization independently from the
+point-in-time metadata gate.
+
+
+============================================================
+109. REAL SMOKE BLOCKED WORDING
+============================================================
+
+If accepted #003 external evidence is unavailable:
+
+do NOT fabricate it.
+
+Report:
+
+BRIEF #005 LOCALLY COMPLETE —
+ACCEPTED #003 REPLAY SMOKE EXTERNALLY BLOCKED
+
+Local deterministic acceptance may still be reviewable.
+
+
+============================================================
+110. BENCHMARK
+============================================================
+
+Create a release benchmark for replay/normalization.
+
+Measure at minimum:
+
+records/s
+RAW MiB/s
+normalized successes/s
+rejections/s
+transcript processing overhead
+peak RSS
+CPU time
+
+Use representative combinations of:
+
+aggTrade
+depth
+REST
+
+Test larger deterministic fixture volumes where practical.
+
+
+============================================================
+111. BENCHMARK REPLAY MULTIPLIERS
+============================================================
+
+Measure at least a bounded equivalent of:
+
+1x
+5x
+10x
+
+relative to one representative accepted segment workload.
+
+This contributes evidence toward later Phase-2 capacity work.
+
+It does NOT by itself close B2 or B4.
+
+
+============================================================
+112. NO PERFORMANCE TARGET INVENTION
+============================================================
+
+Record achieved throughput.
+
+Do not declare an arbitrary minimum as architecture truth.
+
+Correctness gates precede speed.
+
+
+============================================================
+113. SOURCE MUTATION ATTACK
+============================================================
+
+Hash every source file before replay.
+
+Run replay.
+
+Hash after.
+
+Required:
+
+byte-identical.
+
+Replay state/report files must live elsewhere.
+
+
+============================================================
+114. MID-RUN SOURCE CHANGE ATTACK
+============================================================
+
+Simulate source replacement/mutation after initial planning but before or
+during replay.
+
+Required:
+
+detect pinned input mismatch where applicable.
+
+Never produce a successful transcript claiming the old plan if source bytes
+changed.
+
+
+============================================================
+115. TRANSCRIPT CORRUPTION TEST
+============================================================
+
+Corrupt a saved transcript.
+
+Its transcript_hash verification must fail.
+
+Do not treat report existence as integrity.
+
+
+============================================================
+116. PLAN CORRUPTION TEST
+============================================================
+
+Modify ReplayPlan after plan_hash creation.
+
+Required:
+
+plan verification failure.
+
+
+============================================================
+117. METADATA CATALOG ORDER TEST
+============================================================
+
+Supply identical metadata versions in different input vector order.
+
+Expected:
+
+same metadata_catalog_digest
+same resolution results
+
+provided the catalog is semantically identical and valid.
+
+
+============================================================
+118. METADATA DUPLICATE KEY TEST
+============================================================
+
+Duplicate:
+
+(instrument_id, metadata_version)
+
+Expected:
+
+catalog construction failure.
+
+No arbitrary winner.
+
+
+============================================================
+119. FUTURE-KNOWLEDGE TEST
+============================================================
+
+A correction learned after an event's original receive time:
+
+must NOT affect AS_LIVED metadata resolution for that historical event.
+
+CorrectedResearch may use it only under accepted economic effective
+semantics.
+
+
+============================================================
+120. REPLAY RUN IS READ-ONLY RESEARCH INFRASTRUCTURE
+============================================================
+
+No output from #005 may:
+
+place orders
+authorize capital
+modify risk state
+write exchange credentials
+call private APIs
+
+There is no capital control in this Brief.
+
+
+============================================================
+121. EXPECTED CODE AREAS
+============================================================
+
+Expected modifications/additions may include:
+
+Cargo.toml
+Cargo.lock only if workspace membership changes without dependency delta
+FILES.sha256
+README.md
+
+config/runtime/binance-btcusdt-normalizer-v1.json
+
+docs/replay/
+docs/briefs/Brief-005.txt
+
+rust/crates/bqip-normalizer/...
+
+possibly small semantic-preserving shared helper extraction in:
+rust/crates/bqip-contracts/...
+
+Do not modify collector behavior merely for convenience.
+
+
+============================================================
+122. SHARED HELPER EXTRACTION
+============================================================
+
+A small helper may be extracted from accepted code only if:
+
+behavior before/after is byte/semantic identical
+existing tests remain unchanged/passing
+new regression vectors prove equality
+no frozen identity recipe changes
+
+Examples:
+
+building replay SourceLineage
+metadata observation version ID
+
+Do not perform broad refactoring.
+
+
+============================================================
+123. DOCUMENTATION
+============================================================
+
+Document at minimum:
+
+#005 architecture position
+ReplayPlan
+input verification
+record accounting
+normalizer envelope
+accepted event mappings
+metadata resolution
+research replay semantics
+forensic replay limitation
+cross-lane ordering limitation
+transcript digest
+Protobuf digest limitation
+error taxonomy
+quality handling
+benchmark
+known limitations
+
+
+============================================================
+124. KNOWN LIMITATIONS
+============================================================
+
+Explicitly document:
+
+no Book Service
+no LOB state
+no Parquet
+no remote archive reader
+no cross-lane economic total order
+no universal canonical Protobuf byte encoding
+no full as-lived reconstruction for historical periods missing required
+operational/deployment provenance
+metadata UNKNOWN effective-time limitations
+one Binance BTCUSDT venue profile only
+
+
+============================================================
+125. FILES.sha256
+============================================================
+
+Regenerate from canonical Git/index blobs.
+
+Do not hash a Windows CRLF-transformed working tree.
+
+Final canonical inventory must pass from clean checkout.
+
+
+============================================================
+126. CLEAN CHECKOUT
+============================================================
+
+Validate exact final candidate from a clean checkout/bundle.
+
+Use:
+
+Rust 1.85.0
+locked dependencies
+clean target/cache where practical
+
+No hidden local artifact.
+
+
+============================================================
+127. REQUIRED GATES
+============================================================
+
+At minimum:
+
+cargo fmt --check
+
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+cargo test --workspace --locked
+
+Python unit tests
+
+Protobuf tests
+
+Protobuf generation/drift
+
+Ruff
+
+strict mypy
+
+FILES.sha256
+
+cargo audit --deny warnings
+
+pip-audit --strict
+
+gitleaks
+
+tools/checks.py
+
+
+============================================================
+128. DETERMINISM SUPER-GATE
+============================================================
+
+Create one explicit top-level deterministic acceptance test:
+
+same exact replay fixture
+run A
+run B
+fresh processes
+different operational run IDs
+different processing timestamps
+
+Required:
+
+semantic outcomes equal
+metadata resolutions equal
+logical identities equal
+capture identities equal
+normalized payload digests equal
+transcript_hash equal
+
+This test is mandatory.
+
+
+============================================================
+129. NEGATIVE FORENSIC SUPER-GATE
+============================================================
+
+Attempt to label insufficiently evidenced historical RAW as:
+
+AS_LIVED_FORENSIC
+
+Required:
+
+hard failure
+FORENSIC_PROVENANCE_INSUFFICIENT
+
+This test is mandatory.
+
+
+============================================================
+130. SCOPE AUDIT
+============================================================
+
+Validation report must answer:
+
+New third-party dependency family:
+MUST BE NO unless separately approved
+
+Protobuf contract modified:
+EXPECTED NO
+
+BQRC changed:
+MUST BE NO
+
+RAW files mutated:
+MUST BE NO
+
+Remote archive semantics changed:
+MUST BE NO
+
+Canonical Book Service implemented:
+MUST BE NO
+
+LOB reconstruction implemented:
+MUST BE NO
+
+Parquet added:
+MUST BE NO
+
+JetStream/NATS added:
+MUST BE NO
+
+Deribit added:
+MUST BE NO
+
+Features added:
+MUST BE NO
+
+Private exchange APIs:
+MUST BE NO
+
+Execution/trading:
+MUST BE NO
+
+Brief #006 work:
+MUST BE NO
+
+
+============================================================
+131. VALIDATION REPORT
+============================================================
+
+Deliver:
+
+BQIP_Brief_005_Validation_Report.md
+
+It must contain at minimum:
+
+baseline SHA
+candidate SHA
+direct parent
+branch
+working-tree status
+
+changed files
+
+dependency delta
+
+schema/proto delta
+
+ReplayPlan specification
+
+normalizer config hash
+
+event mappings
+
+metadata policy
+
+research replay behavior
+
+forensic replay guard behavior
+
+error taxonomy
+
+golden tests
+
+determinism super-gate
+
+fault matrix
+
+test totals
+
+security results
+
+benchmark results
+
+real #003 replay smoke:
+PASS / BLOCKED / NOT ATTEMPTED
+with exact reason
+
+known limitations
+
+scope audit
+
+
+============================================================
+132. DETERMINISM EVIDENCE
+============================================================
+
+Evidence package must include:
+
+ReplayPlan fixture
+plan_hash
+
+run A report
+run B report
+
+run A transcript
+run B transcript
+
+same transcript_hash proof
+
+semantic comparison output
+
+source before/after hashes
+
+metadata catalog digest
+
+normalizer commit/config hash
+
+
+============================================================
+133. REAL #003 EVIDENCE
+============================================================
+
+If the accepted external #003 artifact is available, evidence must include
+only sanitized derived replay reports/transcripts/hashes.
+
+Do not unnecessarily duplicate the entire original RAW artifact into the
+Brief #005 evidence ZIP if it is already separately retained.
+
+Record the external artifact SHA-256 used.
+
+
+============================================================
+134. EVIDENCE SECRET SCAN
+============================================================
+
+#005 should contain no credentials.
+
+Still scan:
+
+repo
+evidence staging directory
+
+with Gitleaks.
+
+Record PASS.
+
+
+============================================================
+135. REQUIRED DELIVERY ARTIFACTS
+============================================================
+
+Deliver exactly:
+
+1.
+BQIP_Brief_005_Source_<SHORT_SHA>.zip
+
+2.
+BQIP_Brief_005_Review.bundle
+
+3.
+BQIP_Brief_005_Validation_Report.md
+
+4.
+BQIP_Brief_005_Validation_Evidence.zip
+
+5.
+DELIVERY.sha256
+
+DELIVERY.sha256 hashes artifacts 1-4 only.
+
+
+============================================================
+136. SOURCE ZIP
+============================================================
+
+Generate from exact candidate Git tree.
+
+No:
+
+target/
+temporary replay outputs
+external #003 RAW
+credentials
+.env
+cache
+
+Source ZIP bytes must match Git blobs.
+
+
+============================================================
+137. REVIEW BUNDLE
+============================================================
+
+Bundle must reconstruct:
+
+refs/heads/brief-005
+
+and include accepted ancestry back through:
+
+c67481d339b5779e1a18fb95bf3d2b74ae8dcd10
+
+Report exact final candidate SHA.
+
+
+============================================================
+138. ARTIFACT INTEGRITY
+============================================================
+
+Verify:
+
+source ZIP CRC
+bundle integrity
+bundle checkout
+source ZIP ↔ Git tree exact byte equality
+FILES.sha256
+DELIVERY.sha256
+
+Record evidence.
+
+
+============================================================
+139. NO PUSH / NO MERGE
+============================================================
+
+Do NOT push candidate as part of implementation.
+
+Do NOT merge.
+
+Architecture Lead reviews local candidate first.
+
+
+============================================================
+140. CANDIDATE IDENTITY
+============================================================
+
+Final report must distinguish:
+
+BASELINE:
+
+c67481d339b5779e1a18fb95bf3d2b74ae8dcd10
+
+FINAL CANDIDATE:
+
+<NEW FULL SHA>
+
+No uncommitted tree may be submitted for review.
+
+
+============================================================
+141. ACCEPTANCE WORDING
+============================================================
+
+If every mandatory local gate and deterministic replay gate passes,
+and accepted #003 replay evidence is also available and passes:
+
+IMPLEMENTATION BRIEF #005 COMPLETE — AWAITING ARCHITECT REVIEW
+
+If local implementation is complete but accepted external #003 RAW
+is unavailable:
+
+BRIEF #005 LOCALLY COMPLETE —
+ACCEPTED #003 REPLAY SMOKE EXTERNALLY BLOCKED
+
+If contract/schema/dependency conflict occurs:
+
+BRIEF #005 BLOCKED — AWAITING ARCHITECT DECISION
+
+
+============================================================
+142. ABSOLUTE STOP
+============================================================
+
+Do not implement Brief #006.
+
+Do not reconstruct a live order book.
+
+Do not implement HEALTHY/DEGRADED canonical book state.
+
+Do not persist Parquet.
+
+Do not add Deribit.
+
+Do not add features.
+
+Do not add trading.
+
+The only objective is:
+
+VERIFIED RAW
+→ EXPLICIT REPLAY PLAN
+→ ACCEPTED BINANCE PARSING
+→ POINT-IN-TIME METADATA
+→ DETERMINISTIC NORMALIZED OUTCOMES
+→ REPEATABLE TRANSCRIPT HASH
+
+BUILD
+→ VERIFY
+→ FIX
+→ REPEAT
+→ REPORT

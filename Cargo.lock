@@ -168,6 +168,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bqip-normalizer"
+version = "0.1.0"
+dependencies = [
+ "bqip-binance-collector",
+ "bqip-capture-format",
+ "bqip-contracts",
+ "proptest",
+ "prost",
+ "serde",
+ "serde_json",
+ "sha2",
+ "uuid",
+]
+
+[[package]]
 name = "bqip-raw-archive"
 version = "0.1.0"
 dependencies = [

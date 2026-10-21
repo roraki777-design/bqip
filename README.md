@@ -1,7 +1,7 @@
 # BQIP — Brief #001 contract kernel
 
-For the Brief #004 archive candidate, use the current
-[archive operations and validation guide](docs/archive/raw-archive-v1.md).
+For Brief #005, use the current [replay operations and validation guide](docs/replay/replay-v1.md).
+The accepted #004 [archive guide](docs/archive/raw-archive-v1.md) remains available.
 The Foundation notes below are retained as historical documentation.
 
 **Status: BLOCKED pending independent acceptance, including a real CI run.**
