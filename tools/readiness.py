@@ -1,4 +1,4 @@
-"""Fail visibly when Foundation, Brief 002 or Brief 003 deliverables are absent."""
+"""Fail visibly when required Foundation and Brief 002–004 deliverables are absent."""
 
 from pathlib import Path
 
@@ -51,6 +51,20 @@ REQUIRED.extend([
     "docs/collectors/binance-runtime-sources-v1.json",
     "tests/fixtures/collector/wire.json",
     "tests/protobuf/test_collector_binding.py",
+])
+
+
+REQUIRED.extend([
+    "docs/briefs/Brief-004.txt",
+    "docs/archive/raw-archive-v1.md",
+    "config/runtime/raw-archive-v1.json",
+    "rust/crates/bqip-raw-archive/Cargo.toml",
+    "rust/crates/bqip-raw-archive/src/main.rs",
+    "rust/crates/bqip-raw-archive/src/s3/tests.rs",
+    "rust/crates/bqip-raw-archive/tests/archive.rs",
+    "rust/crates/bqip-raw-archive/examples/archive_benchmark.rs",
+    "tests/fixtures/archive/vectors.json",
+    "tools/run_archive_benchmark.py",
 ])
 
 

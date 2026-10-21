@@ -195,6 +195,34 @@ pub fn manifest(
     loss: &str,
     recovered_from: Option<&str>,
 ) -> Result<Value> {
+    let sealed = bqrc::verify_segment(path, LIMITS).map_err(err)?;
+    let directory = path
+        .parent()
+        .ok_or_else(|| err("segment directory missing"))?;
+    if directory.file_name().and_then(|v| v.to_str())
+        != Some(sealed.segment_id.to_string().as_str())
+    {
+        return Err(err("directory/segment identity mismatch"));
+    }
+    manifest_body(
+        lane,
+        reason,
+        loss,
+        recovered_from,
+        &sealed,
+        File::open(path).map_err(err)?,
+        file_hash(&directory.join("seal.json"))?,
+    )
+}
+fn manifest_body<R: Read>(
+    lane: Lane,
+    reason: &str,
+    loss: &str,
+    recovered_from: Option<&str>,
+    sealed: &bqrc::SealedSegment,
+    mut file: R,
+    seal_hash: String,
+) -> Result<Value> {
     if !["AGE", "BYTES", "SESSION", "SHUTDOWN", "RECOVERED"].contains(&reason)
         || !["NONE", "POSSIBLE"].contains(&loss)
     {
@@ -209,16 +237,6 @@ pub fn manifest(
     if let Some(id) = recovered_from {
         Uuid::parse_str(id).map_err(err)?;
     }
-    let sealed = bqrc::verify_segment(path, LIMITS).map_err(err)?;
-    let directory = path
-        .parent()
-        .ok_or_else(|| err("segment directory missing"))?;
-    if directory.file_name().and_then(|v| v.to_str())
-        != Some(sealed.segment_id.to_string().as_str())
-    {
-        return Err(err("directory/segment identity mismatch"));
-    }
-    let mut file = File::open(path).map_err(err)?;
     bqrc::read_header(&mut file).map_err(err)?;
     let mut first: Option<RawCaptureEvent> = None;
     let mut last: Option<RawCaptureEvent> = None;
@@ -289,7 +307,7 @@ pub fn manifest(
         "session_id":if lane==Lane::Rest {None}else{Some(uuid_text(first.session_id.as_deref())?)},
         "first_capture_seq":id.capture_seq.unwrap_or(0).to_string(),"last_capture_seq":last.capture_id.and_then(|v|v.capture_seq).unwrap_or(0).to_string(),
         "record_count":count.to_string(),"first_receive_timestamp_ns":first.receive_timestamp_ns.map(|n|n.to_string()),"last_receive_timestamp_ns":last.receive_timestamp_ns.map(|n|n.to_string()),
-        "byte_length":sealed.byte_length.to_string(),"segment_sha256":hex(&sealed.sha256),"seal_json_sha256":file_hash(&directory.join("seal.json"))?,
+        "byte_length":sealed.byte_length.to_string(),"segment_sha256":hex(&sealed.sha256),"seal_json_sha256":seal_hash,
         "close_reason":reason,"raw_loss_status":loss,"seal_origin":sealed.seal_origin.as_str(),"recovered_from_segment_id":recovered_from});
     value["manifest_hash"] = hex(&manifests::manifest_hash(&value)?).into();
     Ok(value)
@@ -316,6 +334,37 @@ pub fn verify_manifest(path: &Path, lane: Lane) -> Result<Value> {
         value["close_reason"].as_str().unwrap_or(""),
         value["raw_loss_status"].as_str().unwrap_or(""),
         value["recovered_from_segment_id"].as_str(),
+    )?;
+    if value != expected {
+        return Err(err("manifest evidence mismatch"));
+    }
+    Ok(value)
+}
+/// Byte-snapshot validation shares all accepted manifest semantics.
+pub fn verify_manifest_bytes(
+    capture: &[u8],
+    seal: &[u8],
+    manifest: &[u8],
+    lane: Lane,
+    segment_id: Uuid,
+) -> Result<Value> {
+    let sealed = bqrc::verify_bytes(capture, seal, LIMITS).map_err(err)?;
+    if sealed.segment_id != segment_id {
+        return Err(err("directory/segment identity mismatch"));
+    }
+    let text = std::str::from_utf8(manifest).map_err(err)?;
+    let value = manifests::parse_manifest(text)?;
+    if manifests::canonical_bytes(&value)? != manifest {
+        return Err(err("noncanonical manifest"));
+    }
+    let expected = manifest_body(
+        lane,
+        value["close_reason"].as_str().unwrap_or(""),
+        value["raw_loss_status"].as_str().unwrap_or(""),
+        value["recovered_from_segment_id"].as_str(),
+        &sealed,
+        std::io::Cursor::new(capture),
+        hex(&Sha256::digest(seal)),
     )?;
     if value != expected {
         return Err(err("manifest evidence mismatch"));

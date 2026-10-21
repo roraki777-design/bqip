@@ -1,0 +1,23 @@
+[package]
+name = "bqip-raw-archive"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+[dependencies]
+bqip-contracts = { path = "../bqip-contracts" }
+bqip-capture-format = { path = "../bqip-capture-format" }
+bqip-binance-collector = { path = "../bqip-binance-collector" }
+object_store.workspace = true
+tokio.workspace = true
+futures-util.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+uuid.workspace = true
+[dev-dependencies]
+tempfile = "=3.27.0"
+tokio = { workspace = true, features = ["test-util"] }
+[lints]
+workspace = true

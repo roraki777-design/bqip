@@ -1,0 +1,18 @@
+{
+  "schema": "BQIP-RAW-ARCHIVE-CONFIG-V1",
+  "backend": "S3_COMPATIBLE",
+  "endpoint": "https://s3.example.invalid",
+  "region": "us-east-1",
+  "bucket": "bqip-archive",
+  "prefix": "bqip",
+  "spool_root": "spool",
+  "archive_state_root": "archive-state",
+  "scan_interval_ms": 1000,
+  "retry_min_ms": 1000,
+  "retry_max_ms": 60000,
+  "max_inflight_segments": 1,
+  "max_single_put_bytes": 134217728,
+  "request_timeout_ms": 30000,
+  "connect_timeout_ms": 5000,
+  "max_scanned_segments": 100000
+}

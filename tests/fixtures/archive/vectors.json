@@ -1,0 +1,28 @@
+{
+  "provenance": "Independently authored with Python stdlib json/hashlib over ASCII property names; no BQIP implementation called. Receipt vector tests hashing only, not receipt schema.",
+  "namespace": {
+    "value": {
+      "backend": "S3_COMPATIBLE",
+      "endpoint": "https://s3.example.invalid",
+      "region": "us-east-1",
+      "bucket": "bqip-archive",
+      "prefix": "bqip"
+    },
+    "canonical": "{\"backend\":\"S3_COMPATIBLE\",\"bucket\":\"bqip-archive\",\"endpoint\":\"https://s3.example.invalid\",\"prefix\":\"bqip\",\"region\":\"us-east-1\"}",
+    "sha256": "9b9c65cbe5c17336550b6e3af6a2351246c822a4f6e9be1cc6fbdb5d7d917493"
+  },
+  "receipt": {
+    "value": {
+      "schema": "BQIP-RAW-ARCHIVE-RECEIPT-V1",
+      "segment_id": "00000000-0000-0000-0000-000000000001",
+      "verified_at_unix_ns": "1700000000000000000",
+      "nested": {
+        "receipt_hash": "included"
+      },
+      "comments": "included",
+      "receipt_hash": "excluded"
+    },
+    "canonical": "{\"comments\":\"included\",\"nested\":{\"receipt_hash\":\"included\"},\"schema\":\"BQIP-RAW-ARCHIVE-RECEIPT-V1\",\"segment_id\":\"00000000-0000-0000-0000-000000000001\",\"verified_at_unix_ns\":\"1700000000000000000\"}",
+    "sha256": "58b5fd2910f76863a4cd048cf67239f6fca79adbe19d6d2e5dee0eada7a3984d"
+  }
+}

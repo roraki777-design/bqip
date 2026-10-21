@@ -1,0 +1,2615 @@
+BQIP — IMPLEMENTATION BRIEF #004
+IMMUTABLE RAW ARCHIVE UPLOADER
++ REMOTE DURABILITY VERIFICATION
++ BACKLOG / RPO OBSERVABILITY
+
+ROLE
+
+You are the Principal Implementation Engineer for BQIP.
+
+Your responsibility is implementation only:
+
+BUILD
+→ VERIFY
+→ FIX
+→ REPEAT
+→ REPORT
+
+You are NOT the Architecture Lead.
+
+Do not redesign BQIP.
+Do not reopen accepted briefs.
+Do not silently substitute technologies.
+Do not expand scope.
+Do not start Brief #005.
+
+If this brief conflicts with a frozen architectural invariant,
+canonical contract, source-of-truth boundary, accepted baseline,
+or authorized dependency set:
+
+STOP
+
+and end with:
+
+BRIEF #004 BLOCKED — AWAITING ARCHITECT DECISION
+
+
+============================================================
+0. CURRENT AUTHORITATIVE STATE
+============================================================
+
+Architecture:
+
+BQIP Master Architecture Specification v1.0 — FROZEN
+
+Brief #001:
+ACCEPTED / CLOSED
+
+Brief #002:
+ACCEPTED / CLOSED
+
+Brief #003:
+ACCEPTED / MERGED / CLOSED
+
+Brief #003 canonical accepted implementation SHA:
+
+f6bffe6f603122a5170e91449e6847efdfe2f10c
+
+Brief #003 integration merge SHA / current implementation baseline:
+
+c486195f405856774102b8810c6c8b8344f1f363
+
+Authoritative integration branch:
+
+origin/brief-001
+
+Brief #004 MUST begin from exactly:
+
+c486195f405856774102b8810c6c8b8344f1f363
+
+Create:
+
+brief-004
+
+Do not begin from f6bffe6 directly.
+
+Do not merge unrelated branches.
+
+Do not rewrite accepted history.
+
+
+============================================================
+1. PHASE POSITION
+============================================================
+
+BQIP is still inside:
+
+PHASE 2 — BINANCE DATA PROOF
+
+Brief #004 does NOT start Phase 3.
+
+Deribit is NOT authorized.
+
+Brief #004 closes the missing durable-archive portion of the
+preservation path before normalization / canonical state work.
+
+
+============================================================
+2. OBJECTIVE
+============================================================
+
+Implement a production-grade, independently testable RAW archive
+uploader that takes already SEALED + VERIFIED local BQRC segments
+produced by Brief #003 and publishes their exact bytes to durable
+S3-compatible object storage.
+
+The system must prove:
+
+LOCAL SEALED EVIDENCE
+→ CREATE-ONLY REMOTE OBJECTS
+→ FULL REMOTE BYTE VERIFICATION
+→ REMOTE DURABILITY RECEIPT
+
+without permitting object storage latency, outage, throttling,
+authentication failure, or corruption to backpressure or damage
+Brief #003 RAW capture.
+
+Primary objective:
+
+preserve immutable original market evidence off-host.
+
+Secondary objectives:
+
+- deterministic archive keys;
+- idempotent retry;
+- conflict detection;
+- restart safety;
+- exact byte lineage;
+- measurable unuploaded exposure;
+- observable backlog;
+- bounded memory;
+- no secret leakage.
+
+
+============================================================
+3. NON-NEGOTIABLE FROZEN PRINCIPLES
+============================================================
+
+This implementation must preserve at minimum:
+
+P1  Data Integrity > Models
+P2  Raw Means Raw
+P3  Three Clocks
+P4  Determinism
+P6  Replayability
+P7  Research != Production
+P8  Optimize After Measurement
+P10 Preserve Optionality
+P11 Preservation Independence
+
+Especially:
+
+P2:
+remote RAW bytes must be the exact accepted local RAW evidence.
+Do not normalize, recompress, parse-reserialize or otherwise mutate
+the archived BQRC/seal/manifest bytes.
+
+P11:
+remote archive pressure must NEVER block Brief #003 collector RAW
+preservation.
+
+The uploader is downstream of sealed local evidence.
+
+Collector success must NOT depend on archive availability.
+
+
+============================================================
+4. SOURCE-OF-TRUTH BOUNDARY
+============================================================
+
+Authoritative original evidence after this brief becomes:
+
+verified local/remote RAW BQRC
++
+the accepted RAW manifest/seal lineage
+
+Remote archival does not create a new market event.
+
+It preserves an existing accepted evidence object.
+
+Local ArchiveReceipt is derivative operational evidence.
+
+ArchiveReceipt is NOT market-data source-of-truth.
+
+
+============================================================
+5. STRICT SCOPE
+============================================================
+
+IN SCOPE:
+
+- local sealed-segment discovery;
+- local segment/seal/manifest re-verification;
+- deterministic remote object keys;
+- create-only S3-compatible upload;
+- exact-byte remote verification;
+- idempotent retries;
+- collision/conflict detection;
+- persistent local remote-verification receipts;
+- restart/recovery behavior;
+- bounded archive concurrency;
+- bounded memory;
+- retry/backoff;
+- backlog observability;
+- unuploaded-age observability;
+- archive benchmarks;
+- offline fault injection;
+- finite real remote-storage smoke if credentials/environment exist.
+
+OUT OF SCOPE:
+
+- canonical normalizer;
+- Canonical Book Service;
+- shadow book validator;
+- replay engine;
+- Parquet;
+- DuckDB;
+- ClickHouse;
+- NATS;
+- JetStream;
+- Deribit;
+- features;
+- event studies;
+- AI agents;
+- strategy logic;
+- private exchange endpoints;
+- account state;
+- orders;
+- execution;
+- auto-deletion of local RAW;
+- deletion of remote RAW;
+- archival compaction;
+- multipart upload;
+- Kubernetes;
+- database introduction.
+
+Do not implement any item outside scope.
+
+
+============================================================
+6. ARCHITECTURAL POSITION
+============================================================
+
+The process boundary is:
+
+BINANCE
+  ↓
+BRIEF #003 COLLECTOR
+  ↓
+LOCAL RAW SPOOL
+  ↓
+SEALED + VERIFIED SEGMENTS
+  ↓
+BRIEF #004 ARCHIVE UPLOADER
+  ↓
+S3-COMPATIBLE OBJECT STORAGE
+  ↓
+REMOTE FULL-BYTE VERIFICATION
+  ↓
+REMOTE_DURABLE RECEIPT
+
+The uploader MUST be an independent downstream process/library.
+
+Do NOT place S3 calls inside the Brief #003 receive/raw-write hot path.
+
+Do NOT make collector ACK or collector shutdown depend on archive
+availability.
+
+
+============================================================
+7. NEW RUST CRATE
+============================================================
+
+Add one new Rust crate:
+
+rust/crates/bqip-raw-archive
+
+Required:
+
+library
++
+small CLI binary
+
+Suggested implementation areas:
+
+src/lib.rs
+src/config.rs
+src/error.rs
+src/key.rs
+src/local.rs
+src/receipt.rs
+src/store.rs
+src/s3.rs
+src/uploader.rs
+src/verify.rs
+src/telemetry.rs
+src/main.rs
+
+tests/
+
+Exact file decomposition may differ if justified.
+
+Do not create multiple services/crates without approval.
+
+
+============================================================
+8. AUTHORIZED NEW DIRECT DEPENDENCY
+============================================================
+
+One new direct dependency family is authorized:
+
+object_store = "=0.14.2"
+
+Use:
+
+default-features = false
+
+S3 support only.
+
+Expected feature selection:
+
+features = ["aws"]
+
+Do not enable:
+
+azure
+gcp
+http
+fs
+
+unless required only in dev/test scope and explicitly justified.
+
+Reuse existing workspace dependencies for:
+
+tokio
+serde
+serde_json
+sha2
+uuid
+etc.
+
+Do NOT add:
+
+aws-sdk-s3
+aws-config
+rusoto
+opendal
+dotenv
+database crates
+credential manager crates
+new HTTP stacks
+new TLS stacks
+
+without Architecture Lead approval.
+
+
+============================================================
+9. DEPENDENCY PREFLIGHT — MANDATORY
+============================================================
+
+Before implementing the archive subsystem, prove that the exact authorized
+object_store configuration:
+
+- resolves under Cargo.lock;
+- builds using Rust 1.85.0;
+- does not introduce unresolved security advisories;
+- does not force native-tls/OpenSSL;
+- does not force an incompatible MSRV.
+
+Record:
+
+cargo tree
+cargo tree -e features
+Cargo.lock delta
+rustc version
+cargo version
+
+If object_store 0.14.2 + authorized features cannot compile under the
+frozen Rust 1.85.0 toolchain:
+
+STOP.
+
+Do NOT silently use another object_store version.
+Do NOT upgrade Rust.
+Do NOT substitute AWS SDK.
+
+End:
+
+BRIEF #004 BLOCKED — AWAITING ARCHITECT DECISION
+
+
+============================================================
+10. S3-COMPATIBLE BACKEND CONTRACT
+============================================================
+
+The production adapter is:
+
+S3_COMPATIBLE
+
+Configuration may include:
+
+endpoint
+region
+bucket
+prefix
+
+Do not freeze a commercial vendor into the domain model.
+
+The backend MUST support create-only conditional writes equivalent to:
+
+If-None-Match: *
+
+The implementation must use object_store conditional create semantics:
+
+PutMode::Create
+
+Configure S3 conditional-put behavior explicitly where the object_store
+backend requires it.
+
+An S3-compatible endpoint that cannot provide atomic create-if-absent
+semantics is NOT supported by Brief #004.
+
+Fail closed with:
+
+ARCHIVE_CAPABILITY_UNSUPPORTED
+
+
+============================================================
+11. NO OVERWRITE — EVER
+============================================================
+
+The uploader MUST NOT perform ordinary overwrite/upsert writes for archive
+objects.
+
+Forbidden semantic:
+
+PUT key
+and overwrite whatever was there.
+
+Required semantic:
+
+CREATE key iff absent.
+
+Existing object behavior:
+
+same key + same exact bytes/hash
+→ IDEMPOTENT_SUCCESS
+
+same key + different bytes/hash
+→ REMOTE_OBJECT_CONFLICT
+→ fail closed
+→ NEVER overwrite
+
+
+============================================================
+12. NO DELETE PERMISSION OR DELETE CALL
+============================================================
+
+Brief #004 must never call remote DELETE.
+
+The application must not require:
+
+DeleteObject
+DeleteObjects
+
+for normal operation.
+
+Recommended real-smoke credentials should have only the minimum required
+permissions for the configured archive prefix:
+
+PutObject
+GetObject
+HeadObject
+
+plus only what the selected provider strictly requires.
+
+Do not require ListBucket if exact-key operations suffice.
+
+Do not require admin credentials.
+
+
+============================================================
+13. CREDENTIAL BOUNDARY
+============================================================
+
+Secrets MUST NOT appear in:
+
+Git
+JSON runtime config
+logs
+telemetry
+receipts
+validation report
+test fixtures
+evidence ZIP
+command history captured as evidence
+
+Secrets enter only through process environment at runtime.
+
+Define explicit BQIP variables, for example:
+
+BQIP_ARCHIVE_ACCESS_KEY_ID
+BQIP_ARCHIVE_SECRET_ACCESS_KEY
+BQIP_ARCHIVE_SESSION_TOKEN   optional
+
+Do not automatically read credentials from arbitrary files.
+
+Do not query cloud instance metadata / IMDS automatically.
+
+Do not log credential values.
+
+Custom Secret Debug formatting must redact values if credential wrappers are
+ever Debug-printed.
+
+
+============================================================
+14. TLS
+============================================================
+
+Real remote archive transport requires TLS verification.
+
+Do NOT support:
+
+--insecure
+skip certificate verification
+custom accept-all verifier
+plaintext production endpoint
+
+Test doubles may use in-process mocks.
+
+Production S3-compatible adapter must fail closed on invalid TLS.
+
+
+============================================================
+15. LOCAL INPUT ELIGIBILITY
+============================================================
+
+Uploader accepts ONLY a segment that has completed Brief #003 local
+finalization.
+
+Required local artifacts:
+
+capture.sealed
+seal.json
+manifest.json
+
+The uploader must re-run local validation before any remote write.
+
+Do NOT trust filenames alone.
+
+Required revalidation includes:
+
+BQRC header
+BQRC record framing
+CRC
+record count
+segment byte length
+segment SHA-256
+seal semantics
+manifest semantics
+manifest ↔ seal relationship
+segment identity
+lane/session lineage where applicable
+
+
+============================================================
+16. PARTIAL / ACTIVE / POISONED INPUT
+============================================================
+
+Never upload as REMOTE_DURABLE:
+
+capture.partial
+seal.partial
+unsealed segment
+poisoned segment
+failed local verification
+
+Ignore active/incomplete segments.
+
+Do not delete them.
+
+Do not repair them in #004.
+
+Their recovery remains owned by existing preservation contracts.
+
+
+============================================================
+17. RAW LOSS STATUS DOES NOT BLOCK ARCHIVAL
+============================================================
+
+A structurally valid sealed evidence segment may contain an explicit
+non-NONE raw-loss/quality status.
+
+That evidence is still evidence and must remain archivable.
+
+Do NOT hide or reject a valid sealed segment merely because it records:
+
+POSSIBLE
+CONFIRMED
+VENUE_GAP
+PROCESS_CRASH_GAP
+or another accepted explicit quality/loss state.
+
+Archive exactly what local source-of-truth says.
+
+
+============================================================
+18. LOCAL SOURCE MUST BE READ-ONLY TO UPLOADER
+============================================================
+
+The uploader MUST NOT mutate files inside Brief #003 spool segment
+directories.
+
+No receipt may be written into:
+
+spool/<segment>/
+
+Reason:
+
+Brief #003 spool ownership semantics must not be violated by an external
+downstream process.
+
+Uploader access to the source spool is read-only.
+
+
+============================================================
+19. SEPARATE ARCHIVE STATE ROOT
+============================================================
+
+Use a distinct configured path:
+
+archive_state_root
+
+Example:
+
+archive-state/
+
+Operational receipts and archive process state live there.
+
+They must not live inside the RAW spool.
+
+
+============================================================
+20. LOCAL TO REMOTE BYTE IDENTITY
+============================================================
+
+For each local source object:
+
+capture.sealed
+seal.json
+manifest.json
+
+read the exact file bytes.
+
+Compute:
+
+SHA-256
+byte_length
+
+Upload those exact bytes.
+
+Do NOT:
+
+parse JSON and reserialize it
+normalize whitespace
+change LF/CRLF
+compress
+decompress
+rename fields
+rewrite manifests
+modify BQRC
+
+
+============================================================
+21. V1 BUFFERING STRATEGY
+============================================================
+
+Brief #004 intentionally uses single-object conditional PUT.
+
+Multipart is OUT OF SCOPE.
+
+Reason:
+
+conditional create semantics and evidence simplicity take priority in this
+first archive proof.
+
+For each object:
+
+read exact local file bytes into bounded memory
+verify those same bytes
+upload those same bytes
+
+Configure:
+
+max_single_put_bytes
+
+Operational default:
+
+134217728 bytes
+(128 MiB)
+
+This is an operational default, NOT a frozen architecture invariant.
+
+If an object exceeds the configured limit:
+
+ARCHIVE_OBJECT_TOO_LARGE
+
+leave it pending
+do not truncate
+do not multipart-upload
+do not delete
+
+
+============================================================
+22. ARCHIVE CONCURRENCY
+============================================================
+
+Concurrency must be bounded.
+
+Operational default:
+
+max_inflight_segments = 1
+
+It may be configurable.
+
+Do not spawn unbounded upload tasks.
+
+Memory budget must account for:
+
+object bytes
+verification bytes
+retry
+telemetry
+
+Benchmark actual peak RSS.
+
+
+============================================================
+23. DETERMINISTIC REMOTE KEY CONTRACT
+============================================================
+
+Use deterministic object keys derived only from accepted typed lineage.
+
+Canonical layout:
+
+{prefix}/raw/v1/
+  {venue_slug}/
+  {market_slug}/
+  {instrument_slug}/
+  {lane_slug}/
+  {segment_id}/
+  capture.bqrc
+
+Same directory:
+
+seal.json
+manifest.json
+
+Example shape:
+
+bqip/raw/v1/binance/usd_m_futures/btcusdt/depth_ws/
+<segment_uuid>/capture.bqrc
+
+Do NOT place credentials or hostnames in keys.
+
+
+============================================================
+24. KEY COMPONENT VALIDATION
+============================================================
+
+Key components must be generated from typed enums / validated canonical
+values.
+
+Do not directly concatenate untrusted arbitrary strings.
+
+Reject:
+
+..
+.
+empty component
+leading slash
+backslash
+control characters
+unexpected path separators
+
+Canonical known slugs for current scope should be explicit.
+
+
+============================================================
+25. SEGMENT_ID IS THE REMOTE ARCHIVE UNIT
+============================================================
+
+One local segment_id maps to exactly one remote archive directory.
+
+No timestamp-only naming.
+
+No random upload-specific identity that would make retries create duplicates.
+
+Retrying one segment must target the same keys.
+
+
+============================================================
+26. ARCHIVE NAMESPACE ID
+============================================================
+
+A local receipt must identify WHICH remote namespace was verified.
+
+Create deterministic:
+
+archive_namespace_id
+
+from a canonical representation of NON-SECRET configuration:
+
+backend type
+canonical endpoint
+region
+bucket
+prefix
+
+Use SHA-256 over restricted canonical JSON/JCS.
+
+Do NOT include credentials.
+
+A receipt generated for one namespace must not silently satisfy a different
+bucket/endpoint/prefix configuration.
+
+
+============================================================
+27. REMOTE WRITE ORDER
+============================================================
+
+For a new segment archive attempt, write in this exact logical order:
+
+1. capture.bqrc
+2. seal.json
+3. manifest.json
+
+manifest.json is the commit marker and MUST be last.
+
+Do not mark REMOTE_DURABLE merely because capture.bqrc exists.
+
+
+============================================================
+28. MANIFEST-AS-COMMIT-MARKER SEMANTICS
+============================================================
+
+Remote archive may temporarily contain:
+
+capture only
+
+or:
+
+capture + seal
+
+after interruption.
+
+That is NOT REMOTE_DURABLE.
+
+Remote archive set becomes eligible for REMOTE_DURABLE only after:
+
+manifest exists
++
+all three remote objects are independently read back
++
+all exact hashes/lengths match
++
+local lineage verification still passes
+
+
+============================================================
+29. EXISTING OBJECT HANDLING
+============================================================
+
+If conditional create reports the object already exists:
+
+do NOT treat that as automatic success.
+
+GET the existing remote object.
+
+Compute exact:
+
+SHA-256
+byte_length
+
+If exactly identical to expected local bytes:
+
+IDEMPOTENT_SUCCESS
+
+If different:
+
+REMOTE_OBJECT_CONFLICT
+
+Do not overwrite.
+
+
+============================================================
+30. UNKNOWN PUT OUTCOME
+============================================================
+
+Handle the classic case:
+
+remote server may have committed object
+but client loses the response.
+
+If PUT returns a network/transport error with uncertain outcome:
+
+perform exact-key GET when possible.
+
+If object exists and exact bytes match:
+
+treat that object as successfully created.
+
+If object does not exist:
+
+retry according to policy.
+
+If object exists but bytes differ:
+
+REMOTE_OBJECT_CONFLICT.
+
+If remote state cannot currently be determined:
+
+remain RETRYABLE.
+
+Never manufacture success.
+
+
+============================================================
+31. MANIFEST EXISTS FIRST — DIVERGENCE RULE
+============================================================
+
+If remote manifest.json already exists:
+
+first verify manifest bytes exactly.
+
+Then verify capture.bqrc and seal.json.
+
+If all exact bytes match:
+
+REMOTE_DURABLE may be reconstructed idempotently.
+
+If manifest exists but any referenced remote evidence is:
+
+missing
+different
+corrupt
+unreadable after retries
+
+emit:
+
+REMOTE_ARCHIVE_DIVERGENCE
+
+Do NOT silently repair an archive set whose commit marker already exists.
+
+That condition may indicate external mutation.
+
+
+============================================================
+32. REMOTE VERIFICATION IS FULL-BYTE
+============================================================
+
+HEAD is not sufficient.
+
+ETag is not authoritative cryptographic evidence.
+
+After upload / existing-object resolution:
+
+GET every object fully.
+
+Compute BQIP SHA-256 over returned bytes.
+
+Verify exact length.
+
+Required remote verification:
+
+capture.bqrc SHA-256 exact
+seal.json SHA-256 exact
+manifest.json SHA-256 exact
+
+Do not infer integrity from ETag alone.
+
+
+============================================================
+33. REMOTE STRUCTURAL VERIFICATION
+============================================================
+
+Because remote bytes equal locally verified source bytes, byte equality is the
+primary proof.
+
+Additionally confirm remote-returned:
+
+seal.json parses as expected accepted seal
+manifest.json parses as expected accepted manifest
+
+and their exact semantic relationships remain valid.
+
+Do not create a second divergent interpretation of the #003 manifest format.
+
+
+============================================================
+34. ARCHIVE STATE MACHINE
+============================================================
+
+Implement explicit operational states equivalent to:
+
+DISCOVERED
+LOCAL_VERIFYING
+LOCAL_VERIFIED
+UPLOAD_PENDING
+UPLOADING_CAPTURE
+UPLOADING_SEAL
+UPLOADING_MANIFEST
+REMOTE_VERIFYING
+REMOTE_DURABLE
+
+Failure classes include at minimum:
+
+LOCAL_SOURCE_INVALID
+ARCHIVE_AUTH_FAILURE
+ARCHIVE_CAPABILITY_UNSUPPORTED
+ARCHIVE_OBJECT_TOO_LARGE
+UPLOAD_RETRYABLE
+UPLOAD_FAILED
+REMOTE_OBJECT_CONFLICT
+REMOTE_HASH_MISMATCH
+REMOTE_LENGTH_MISMATCH
+REMOTE_MANIFEST_MISMATCH
+REMOTE_ARCHIVE_DIVERGENCE
+
+Exact enum names may differ only if semantics remain explicit.
+
+
+============================================================
+35. LOCAL ARCHIVE RECEIPT
+============================================================
+
+After full remote verification only, create a local derivative receipt:
+
+BQIP-RAW-ARCHIVE-RECEIPT-V1
+
+inside archive_state_root.
+
+Recommended deterministic path:
+
+archive-state/v1/{archive_namespace_id}/{segment_id}.json
+
+
+============================================================
+36. RECEIPT REQUIRED FIELDS
+============================================================
+
+At minimum:
+
+schema
+segment_id
+archive_namespace_id
+backend_kind
+venue
+market
+instrument
+lane
+
+local_manifest_hash
+local_segment_sha256
+local_seal_sha256
+
+remote_capture_key
+remote_capture_sha256
+remote_capture_bytes
+
+remote_seal_key
+remote_seal_sha256
+remote_seal_bytes
+
+remote_manifest_key
+remote_manifest_sha256
+remote_manifest_bytes
+
+remote_etag fields if available, informational only
+remote_version fields if available, informational only
+
+verification_method = FULL_GET_SHA256
+
+verified_at_unix_ns
+uploader_commit
+
+receipt_hash
+
+
+============================================================
+37. RECEIPT HASH
+============================================================
+
+Avoid self-reference ambiguity.
+
+Define:
+
+receipt_hash =
+SHA256(
+  restricted canonical JCS representation
+  of the receipt with receipt_hash field omitted
+)
+
+Then serialize final receipt including receipt_hash.
+
+Document and test exact canonicalization.
+
+
+============================================================
+38. RECEIPT DURABILITY
+============================================================
+
+Receipt publication:
+
+write temporary file
+flush
+sync file
+atomic rename
+directory sync using existing repository portability semantics
+
+Receipt may be regenerated if lost.
+
+Receipt loss does not imply market evidence loss.
+
+Receipt corruption must cause remote re-verification, not silent trust.
+
+
+============================================================
+39. RECEIPT IS CONFIG-NAMESPACE SPECIFIC
+============================================================
+
+A receipt counts only when:
+
+receipt.archive_namespace_id
+==
+current configured archive_namespace_id.
+
+Changing endpoint/bucket/prefix must expose the segments as not verified for
+the new namespace.
+
+
+============================================================
+40. STARTUP RECONSTRUCTION
+============================================================
+
+On startup:
+
+scan eligible sealed local segments.
+
+For each:
+
+if no valid receipt for current namespace:
+    schedule archive/verification.
+
+if valid receipt exists:
+    classify REMOTE_DURABLE for that namespace.
+
+If receipt is malformed/corrupt:
+    do not crash the whole scanner;
+    mark receipt invalid;
+    reverify remote state.
+
+Do not mutate source spool.
+
+
+============================================================
+41. NO LOCAL AUTO-DELETION
+============================================================
+
+Even after REMOTE_DURABLE:
+
+do NOT delete:
+
+capture.sealed
+seal.json
+manifest.json
+source segment directory
+
+Brief #004 does not authorize local retention/eviction.
+
+REMOTE_DURABLE
+!=
+LOCAL_DELETE_AUTHORIZED
+
+
+============================================================
+42. NO REMOTE AUTO-DELETION
+============================================================
+
+No delete/cleanup of archive objects.
+
+Orphan objects caused by interrupted pre-manifest upload may remain.
+
+Retries reuse the same deterministic keys.
+
+Do not garbage-collect them in #004.
+
+
+============================================================
+43. SCANNING
+============================================================
+
+Implement bounded periodic source scanning.
+
+Configurable:
+
+scan_interval_ms
+
+Do not recursively scan unrelated paths.
+
+Do not follow symlinks outside spool.
+
+Reject unexpected path escape.
+
+Discovery must tolerate a segment being finalized concurrently:
+
+incomplete set
+→ skip this scan
+→ inspect later
+
+No error storm.
+
+
+============================================================
+44. PRESERVATION INDEPENDENCE
+============================================================
+
+Uploader outage must not interfere with collector.
+
+Explicitly prove:
+
+remote store stalled/down
++
+uploader backlog grows
++
+Brief #003 local RAW continues sealing normally.
+
+Uploader MUST NOT:
+
+hold collector locks
+own collector network tasks
+block raw writer queues
+modify collector ACK semantics
+
+
+============================================================
+45. BACKLOG / RPO OBSERVABILITY
+============================================================
+
+Expose at minimum:
+
+archive_pending_segments
+archive_pending_bytes
+
+archive_remote_durable_segments
+archive_remote_durable_bytes
+
+oldest_unuploaded_age_seconds
+
+upload_attempts_total
+upload_successes_total
+upload_retries_total
+upload_failures_total
+
+remote_verify_attempts_total
+remote_verify_successes_total
+remote_verify_failures_total
+
+remote_conflicts_total
+archive_divergence_total
+
+auth_failures_total
+capability_failures_total
+
+bytes_uploaded_total
+bytes_verified_download_total
+
+upload_latency_ms
+verification_latency_ms
+
+active_uploads
+
+
+============================================================
+46. OLDEST UNUPLOADED AGE
+============================================================
+
+oldest_unuploaded_age_seconds is a first-class operational metric.
+
+It represents current off-host exposure.
+
+Do not hard-code an architecture-wide acceptable RPO number.
+
+Record observed values.
+
+Phase-2 benchmarks will later determine operating limits.
+
+
+============================================================
+47. RETRY POLICY
+============================================================
+
+Use deterministic bounded exponential backoff.
+
+Configurable:
+
+retry_min_ms
+retry_max_ms
+
+Do not use unbounded task creation.
+
+Do not reset backoff merely because a scan rediscovers the same segment.
+
+Authentication/capability/conflict failures should not be hammered at network
+retry frequency.
+
+
+============================================================
+48. RETRY CLASSIFICATION
+============================================================
+
+Retryable examples:
+
+connection reset
+timeout
+temporary 5xx
+provider throttling
+temporary DNS failure
+
+Non-retryable until operator/config change:
+
+invalid credentials
+unsupported conditional create
+invalid endpoint config
+object conflict
+local corruption
+
+Typed classification is required.
+
+
+============================================================
+49. SHUTDOWN
+============================================================
+
+Graceful shutdown does NOT have the same durability obligation as the raw
+writer because local evidence is already preserved.
+
+On shutdown:
+
+stop discovering new segments
+allow active bounded archive operations to finish if possible
+persist only receipts that reached full verification
+exit without deleting any local evidence
+
+If interrupted mid-upload:
+
+next startup resolves state idempotently.
+
+Do not claim REMOTE_DURABLE for incomplete work.
+
+
+============================================================
+50. ARCHIVE STORE ABSTRACTION
+============================================================
+
+Keep object storage implementation behind a narrow internal interface.
+
+The domain/uploader must not have arbitrary access to provider operations.
+
+The internal interface should expose only what #004 needs, conceptually:
+
+create_if_absent(key, bytes)
+get_exact(key)
+head_optional(key)
+
+No delete.
+No list required for normal operation.
+No overwrite method.
+
+Use generics / native async trait support if needed.
+
+Do not add async-trait dependency unless approved.
+
+
+============================================================
+51. PRODUCTION S3 ADAPTER
+============================================================
+
+Implement S3-compatible adapter through object_store.
+
+Use conditional:
+
+PutMode::Create
+
+Do not use ordinary ObjectStore::put / overwrite semantics for archive
+publication.
+
+Normalize object_store errors into BQIP typed archive errors.
+
+Preserve provider diagnostic status/code without leaking credentials.
+
+
+============================================================
+52. PROVIDER-SPECIFIC METADATA IS NON-AUTHORITATIVE
+============================================================
+
+ETag/version ID may be recorded for diagnostics.
+
+They are not substitutes for:
+
+BQIP SHA-256
+exact byte length
+full read-back verification
+
+
+============================================================
+53. CONFIGURATION
+============================================================
+
+Add a versioned runtime config example.
+
+Suggested non-secret fields:
+
+backend
+endpoint
+region
+bucket
+prefix
+spool_root
+archive_state_root
+scan_interval_ms
+retry_min_ms
+retry_max_ms
+max_inflight_segments
+max_single_put_bytes
+request_timeout_ms
+connect_timeout_ms
+
+No credentials in JSON.
+
+
+============================================================
+54. CONFIG VALIDATION
+============================================================
+
+Reject invalid:
+
+empty bucket
+bad endpoint
+HTTP production endpoint
+unsafe prefix
+archive_state_root == spool_root
+zero/absurd queue/concurrency settings
+max_single_put_bytes below required control-file size
+path escape
+
+Validation errors must be typed.
+
+
+============================================================
+55. LOGGING
+============================================================
+
+Structured JSONL.
+
+Do not log:
+
+credentials
+authorization headers
+raw market payloads
+complete secret-bearing environment
+
+May log:
+
+segment_id
+lane
+archive_namespace_id
+remote key
+object length
+SHA-256
+retry class
+latency
+provider status
+state transition
+
+
+============================================================
+56. OFFLINE TEST BACKEND
+============================================================
+
+Tests must not require real cloud credentials.
+
+Provide a deterministic in-memory/fault-injecting ArchiveStore test
+implementation.
+
+Tests must control:
+
+create success
+AlreadyExists
+unknown put outcome
+GET success
+GET not found
+GET mutated bytes
+auth failure
+5xx/retryable failure
+permanent failure
+latency/stall
+
+Do not depend on Internet in CI.
+
+
+============================================================
+57. CORE EXACT-BYTE TEST
+============================================================
+
+Given a valid #003 sealed segment:
+
+run uploader against test store.
+
+Assert remote:
+
+capture.bqrc
+seal.json
+manifest.json
+
+are byte-for-byte identical to local source files.
+
+Not semantically equivalent.
+
+Exact bytes.
+
+
+============================================================
+58. IDEMPOTENCY TEST
+============================================================
+
+Archive one valid segment.
+
+Run uploader again.
+
+Required:
+
+no overwrite
+no duplicate logical archive set
+existing exact objects verified
+REMOTE_DURABLE reconstructed successfully
+conflict counter == 0
+
+
+============================================================
+59. CONFLICT TEST
+============================================================
+
+Pre-populate:
+
+same expected key
+different bytes
+
+Attempt archive.
+
+Required:
+
+REMOTE_OBJECT_CONFLICT
+
+no overwrite
+no manifest success
+no receipt
+local source unchanged
+
+
+============================================================
+60. LOST-ACK TEST
+============================================================
+
+Fault backend behavior:
+
+commit object successfully
+then return simulated connection failure to client.
+
+Uploader must resolve by GET.
+
+If exact bytes exist:
+
+continue idempotently.
+
+No duplicate.
+No false failure.
+No overwrite.
+
+
+============================================================
+61. CRASH BOUNDARY TESTS
+============================================================
+
+Simulate crash/restart after:
+
+A. capture remote write
+B. capture + seal
+C. manifest remote write before receipt
+D. full verification before receipt rename
+E. receipt temp write
+
+After restart:
+
+resolve deterministically.
+
+Never create conflicting archive bytes.
+
+Never require deleting remote objects.
+
+
+============================================================
+62. MANIFEST-COMMIT DIVERGENCE TEST
+============================================================
+
+Create remote manifest first / leave it committed.
+
+Then:
+
+delete or corrupt a referenced remote object in the fake backend.
+
+Required:
+
+REMOTE_ARCHIVE_DIVERGENCE
+
+No automatic repair.
+No REMOTE_DURABLE receipt.
+
+
+============================================================
+63. REMOTE TAMPER TESTS
+============================================================
+
+Independently tamper:
+
+capture bytes
+seal bytes
+manifest bytes
+
+Remote full verification must detect each case.
+
+HEAD/ETag success must not mask byte mismatch.
+
+
+============================================================
+64. LOCAL CORRUPTION TEST
+============================================================
+
+Tamper local sealed evidence before archive attempt.
+
+Required:
+
+local verification fails
+zero remote writes
+LOCAL_SOURCE_INVALID
+source remains untouched
+
+
+============================================================
+65. LOCAL SOURCE READ-ONLY TEST
+============================================================
+
+Snapshot all source spool file names, hashes and metadata before uploader run.
+
+After uploader run:
+
+same source files
+same bytes
+
+Only archive_state_root may gain receipt/state files.
+
+
+============================================================
+66. CONCURRENT WORKER TEST
+============================================================
+
+Two uploader workers/process-equivalent tasks attempt same segment.
+
+Create-only semantics must ensure:
+
+at most one remote creation per key
+
+second path resolves as exact idempotent state
+
+no overwrite
+no conflict when bytes equal
+
+
+============================================================
+67. AUTH FAILURE TEST
+============================================================
+
+Simulate authentication rejection.
+
+Required:
+
+ARCHIVE_AUTH_FAILURE
+no busy loop
+no REMOTE_DURABLE receipt
+local source preserved
+
+
+============================================================
+68. THROTTLE / 5XX TEST
+============================================================
+
+Inject retryable failures.
+
+Verify:
+
+bounded exponential backoff
+bounded concurrency
+eventual success when provider recovers
+no source mutation
+
+
+============================================================
+69. OBJECT SIZE LIMIT TEST
+============================================================
+
+Provide eligible valid source object above configured max_single_put_bytes.
+
+Required:
+
+ARCHIVE_OBJECT_TOO_LARGE
+no truncation
+no upload
+no receipt
+remains pending
+
+
+============================================================
+70. BACKLOG INDEPENDENCE ATTACK
+============================================================
+
+MANDATORY P11 TEST.
+
+Create/stimulate Brief #003-compatible source production while remote archive
+backend is indefinitely stalled.
+
+Required:
+
+local RAW preservation continues
+local sealing succeeds
+uploader pending segment count increases
+uploader pending bytes increases
+oldest_unuploaded_age increases
+no collector/raw-writer failure caused by uploader
+no source mutation
+no unbounded task growth
+
+
+============================================================
+71. RECEIPT CORRUPTION TEST
+============================================================
+
+Corrupt local ArchiveReceipt.
+
+Restart uploader.
+
+Required:
+
+receipt rejected
+remote archive revalidated
+new valid receipt published if remote set is exact
+
+Do not trust corrupt receipt.
+
+
+============================================================
+72. NAMESPACE CHANGE TEST
+============================================================
+
+Archive segment into namespace A.
+
+Then configure namespace B.
+
+Receipt A must not satisfy B.
+
+Segment becomes pending for B.
+
+No cross-bucket false success.
+
+
+============================================================
+73. EMPTY / ACTIVE SPOOL TEST
+============================================================
+
+No sealed segments:
+
+clean success
+zero uploads.
+
+Active capture.partial only:
+
+ignored safely
+zero uploads.
+
+
+============================================================
+74. SYMLINK / PATH ESCAPE TEST
+============================================================
+
+Uploader must not follow malicious/unexpected links outside allowed spool
+root.
+
+Reject/skip with visible error.
+
+No external file upload.
+
+
+============================================================
+75. REAL PROVIDER CAPABILITY
+============================================================
+
+If external test credentials exist, real remote smoke must prove provider
+supports:
+
+TLS validation
+create-only object creation
+exact-key GET
+repeat create rejection
+read-back exact bytes
+
+If not available:
+
+do not fake it.
+
+Use final status:
+
+BRIEF #004 LOCALLY COMPLETE — REMOTE ARCHIVE SMOKE EXTERNALLY BLOCKED
+
+
+============================================================
+76. REAL REMOTE SMOKE — FINITE
+============================================================
+
+After all offline gates pass, perform a finite remote archive smoke.
+
+Use a dedicated non-production test prefix.
+
+Recommended source:
+
+real sealed Brief #003-compatible segment set
+produced by a finite public Binance smoke
+
+or an already preserved accepted #003 smoke fixture.
+
+No private exchange credentials.
+
+Archive at least:
+
+one depth segment
+one aggTrade segment
+one REST segment if present
+
+or equivalent three accepted sealed #003 segments.
+
+
+============================================================
+77. REAL REMOTE SMOKE SUCCESS CONDITIONS
+============================================================
+
+Required:
+
+local verify PASS
+
+capture create PASS
+seal create PASS
+manifest create PASS
+
+full GET verify PASS for every object
+
+retry same segments:
+IDEMPOTENT PASS
+
+zero conflicts
+
+receipt created only after full remote verification
+
+remote bytes == local bytes
+
+all local source hashes unchanged
+
+no archive secrets in logs/evidence
+
+
+============================================================
+78. DO NOT DELETE REMOTE SMOKE OBJECTS AUTOMATICALLY
+============================================================
+
+Uploader has no delete functionality.
+
+Use a dedicated smoke prefix.
+
+Any later cleanup is an external operator/cloud-storage administrative task
+outside Brief #004.
+
+
+============================================================
+79. BENCHMARK
+============================================================
+
+Create reproducible synthetic archive benchmarks.
+
+At minimum exercise representative object sizes such as:
+
+1 MiB
+8 MiB
+32 MiB
+64 MiB
+
+If accepted #003 segment sizes justify another point, include it.
+
+Record:
+
+source bytes
+upload bytes/s
+full-verification download bytes/s
+upload latency p50/p95/p99
+verification latency p50/p95/p99
+end-to-end segment archive latency
+peak RSS if available
+CPU time if available
+active concurrency
+retry counts
+archive-state bytes
+
+
+============================================================
+80. BENCHMARK CLAIM LIMIT
+============================================================
+
+This benchmark contributes evidence toward later B2/B4.
+
+It does NOT close B2 or B4 by itself unless explicitly adjudicated later.
+
+Do not extrapolate shared CI/cloud performance to all production hardware.
+
+Report actual rates, not requested target rates.
+
+
+============================================================
+81. PRELIMINARY RPO EVIDENCE
+============================================================
+
+For smoke/benchmark, report:
+
+maximum pending bytes observed
+maximum oldest_unuploaded_age observed
+upload throughput
+verification throughput
+
+Do not declare a universal acceptable RPO.
+
+That remains benchmark/configuration work.
+
+
+============================================================
+82. WINDOWS
+============================================================
+
+The repository must continue to compile/test as required by current baseline.
+
+Do not claim POSIX directory-entry durability on Windows.
+
+Archive receipt local durability inherits the already documented Windows
+directory-sync limitation.
+
+Do not reopen #003 portability decisions.
+
+
+============================================================
+83. BQRC V2 IS FROZEN
+============================================================
+
+Brief #004 MUST NOT change:
+
+BQRC magic
+BQRC header
+BQRC record encoding
+CRC definition
+seal origin semantics
+existing #003 raw evidence bytes
+
+Archive transports BQRC.
+
+It does not redesign BQRC.
+
+
+============================================================
+84. EXISTING MANIFEST CONTRACTS
+============================================================
+
+Do not change accepted #003 manifest semantics merely to make remote upload
+easier.
+
+The remote copy is exact.
+
+ArchiveReceipt is the place for remote-specific fields.
+
+
+============================================================
+85. PROTOBUF
+============================================================
+
+Do not modify canonical Protobuf contracts unless strictly necessary.
+
+Current expectation:
+
+NO Protobuf changes required.
+
+If implementation appears to require modifying frozen market-data contracts:
+
+STOP and request Architecture Lead decision.
+
+
+============================================================
+86. SECURITY
+============================================================
+
+Mandatory:
+
+cargo audit --deny warnings
+pip-audit --strict
+gitleaks
+
+No credentials in repo.
+
+No secret fixtures.
+
+No insecure TLS.
+
+No Git dependencies unless separately authorized.
+
+No remote delete API.
+
+No overwrite archive API.
+
+
+============================================================
+87. SUPPLY CHAIN REPORT
+============================================================
+
+Validation report must include:
+
+exact object_store version
+enabled feature set
+new transitive dependency count
+Cargo.lock hash
+cargo tree relevant branch
+cargo tree -e features
+Rust 1.85 compatibility proof
+cargo audit result
+
+Do not merely state "dependency added".
+
+
+============================================================
+88. EXISTING REGRESSION SUITE
+============================================================
+
+All accepted #001/#002/#003 tests must continue to pass.
+
+At minimum:
+
+cargo fmt --check
+cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+cargo test --workspace --locked
+Python tests
+Protobuf tests
+generation/drift checks
+FILES.sha256
+security scans
+
+Do not weaken existing gates.
+
+
+============================================================
+89. FILES.sha256
+============================================================
+
+Any tracked file modification requires correct regeneration of FILES.sha256
+from canonical Git/index blobs.
+
+Do not generate hashes from a CRLF-transformed Windows working tree.
+
+The final clean-checkout gate must validate the canonical inventory.
+
+
+============================================================
+90. CLEAN CHECKOUT VALIDATION
+============================================================
+
+Validation must include a clean checkout of the final candidate.
+
+Use:
+
+empty/new Cargo target/cache where practical
+locked dependencies
+exact candidate SHA
+
+Evidence must prove no hidden local artifact is required.
+
+
+============================================================
+91. CI
+============================================================
+
+Existing CI must remain offline with respect to real S3 credentials.
+
+Archive tests in CI use deterministic mocks/in-memory backend.
+
+No live cloud access in normal CI.
+
+No secrets required for pull-request checks.
+
+
+============================================================
+92. EXPECTED NEW FILE AREAS
+============================================================
+
+Expected additions/changes may include:
+
+Cargo.toml
+Cargo.lock
+FILES.sha256
+
+rust/crates/bqip-raw-archive/...
+
+config/runtime/
+archive uploader example config
+
+docs/collectors/
+or
+docs/archive/
+
+docs/briefs/Brief-004.txt
+
+tools/ if required for benchmark/evidence
+
+Do not touch unrelated project areas.
+
+
+============================================================
+93. DOCUMENTATION
+============================================================
+
+Document:
+
+archive architecture position
+exact source eligibility
+remote key contract
+manifest-last commit semantics
+conditional-create requirement
+receipt semantics
+retry behavior
+conflict behavior
+credential boundary
+minimum permissions
+no-delete policy
+full-read verification
+configuration
+operational metrics
+recovery procedure
+known limitations
+
+
+============================================================
+94. KNOWN LIMITATIONS MUST BE EXPLICIT
+============================================================
+
+At minimum address:
+
+single-PUT only
+configured max object size
+no multipart
+no remote deletion
+no local auto-deletion
+one configured archive namespace per process
+full-read verification bandwidth cost
+provider/operator can theoretically mutate data outside BQIP permissions
+Windows directory-sync limitation
+no universal RPO yet
+
+
+============================================================
+95. DO NOT CLAIM ABSOLUTE CLOUD IMMUTABILITY
+============================================================
+
+BQIP enforces application-level immutability by:
+
+create-only writes
+no overwrite path
+no delete path
+least-privilege credentials
+full-byte verification
+conflict detection
+
+Do NOT claim a cloud administrator or bucket owner is cryptographically unable
+to mutate/delete data.
+
+That stronger control would require provider-level retention/object-lock policy
+outside current scope.
+
+
+============================================================
+96. OPTIONAL PROVIDER HARDENING
+============================================================
+
+Provider-side versioning/object lock/bucket policy may be documented as
+external operational hardening.
+
+Do NOT make them hidden requirements unless explicitly configured and tested.
+
+BQIP correctness in this brief rests on its own create-only + verification
+contract.
+
+
+============================================================
+97. TELEMETRY / RAW LOG SEPARATION
+============================================================
+
+Logs are not evidence source-of-truth.
+
+Archive counters may be lost/reconstructed.
+
+Remote objects + accepted local manifests + receipts are the relevant evidence.
+
+Do not log raw market bodies.
+
+
+============================================================
+98. DEFINITION OF DONE — FUNCTIONAL
+============================================================
+
+PASS only if all are true:
+
+- new archive crate builds;
+- Rust 1.85 proof passes;
+- sealed #003 segment discovery works;
+- local re-verification works;
+- source spool remains read-only;
+- deterministic keys work;
+- atomic create-only remote semantics work;
+- existing-identical object is idempotent;
+- existing-different object fails conflict;
+- unknown PUT outcome resolves safely;
+- manifest is written last;
+- full GET verification works;
+- ETag is not used as authoritative hash;
+- receipt only follows full verification;
+- receipt hash canonicalization works;
+- restart reconstruction works;
+- namespace binding works;
+- bounded concurrency works;
+- object size cap works;
+- backlog/RPO telemetry works;
+- remote outage does not backpressure collector;
+- no local delete;
+- no remote delete;
+- no BQRC mutation;
+- all existing regression gates pass.
+
+
+============================================================
+99. DEFINITION OF DONE — SECURITY
+============================================================
+
+Required:
+
+0 committed secrets
+0 logged credentials
+TLS verification active
+cargo audit clean
+pip audit clean
+gitleaks clean
+no delete method in production archive interface
+no overwrite method in production archive interface
+conditional create used for every remote publish
+
+
+============================================================
+100. DEFINITION OF DONE — ADVERSARIAL
+============================================================
+
+Required passing attacks:
+
+exact byte archive
+idempotent retry
+different-byte conflict
+lost ACK
+crash after raw
+crash after seal
+crash after manifest
+receipt loss
+receipt corruption
+remote RAW tamper
+remote seal tamper
+remote manifest tamper
+manifest-with-missing-object divergence
+local corruption
+auth failure
+5xx/throttle retry
+oversized object
+same-segment concurrency
+namespace change
+symlink/path escape
+remote stall / collector continues
+
+
+============================================================
+101. DEFINITION OF DONE — REMOTE SMOKE
+============================================================
+
+If real remote credentials/environment are available:
+
+real S3-compatible smoke PASS
+TLS active
+conditional create proven
+three-object set archived
+full GET verification PASS
+retry idempotency PASS
+source unchanged
+0 conflicts
+0 secret leakage
+
+If external remote access is unavailable:
+
+do NOT fabricate this gate.
+
+Report external block explicitly.
+
+
+============================================================
+102. VALIDATION REPORT — REQUIRED CONTENT
+============================================================
+
+BQIP_Brief_004_Validation_Report.md must include at minimum:
+
+baseline SHA
+candidate SHA
+parent/ancestry
+branch
+working-tree status
+
+files changed
+
+dependency delta
+object_store exact version/features
+Rust MSRV proof
+
+all test counts
+
+conditional-write behavior
+
+remote-key examples
+
+state machine
+
+fault-injection matrix
+
+security results
+
+clean-checkout results
+
+benchmark table
+
+backlog/RPO measurements
+
+remote smoke:
+PASS / BLOCKED / NOT ATTEMPTED with reason
+
+known limitations
+
+scope audit
+
+whether any #005 work was performed
+
+
+============================================================
+103. EVIDENCE ZIP
+============================================================
+
+Validation Evidence ZIP must contain:
+
+commands.json or equivalent
+command logs
+test summaries
+dependency tree
+feature tree
+security scan logs
+FILES.sha256 check
+clean-checkout evidence
+fault-injection outputs
+benchmark output
+artifact verification output
+
+If real remote smoke is executed:
+
+sanitized smoke report
+sanitized structured logs
+remote verification records
+object keys/hashes/lengths
+
+NEVER include:
+
+secret environment dump
+access keys
+secret keys
+session tokens
+Authorization headers
+
+
+============================================================
+104. EVIDENCE SECRET SCAN
+============================================================
+
+Before packaging validation evidence:
+
+run a secret scan over the evidence staging directory itself.
+
+Record PASS.
+
+Do not assume gitleaks on Git repository protects generated evidence.
+
+
+============================================================
+105. REQUIRED DELIVERY ARTIFACTS
+============================================================
+
+Deliver exactly:
+
+1.
+BQIP_Brief_004_Source_<SHORT_SHA>.zip
+
+2.
+BQIP_Brief_004_Review.bundle
+
+3.
+BQIP_Brief_004_Validation_Report.md
+
+4.
+BQIP_Brief_004_Validation_Evidence.zip
+
+5.
+DELIVERY.sha256
+
+DELIVERY.sha256 covers artifacts 1-4.
+
+It does not hash itself.
+
+
+============================================================
+106. SOURCE ZIP
+============================================================
+
+Source ZIP must be generated from the exact Git candidate tree.
+
+It must contain no:
+
+target/
+credentials
+.env
+archive runtime state
+remote smoke secrets
+generated cloud auth files
+
+Archive bytes must correspond to candidate Git blobs.
+
+
+============================================================
+107. REVIEW BUNDLE
+============================================================
+
+Bundle must reconstruct:
+
+brief-004
+
+and include required accepted ancestry back to:
+
+c486195f405856774102b8810c6c8b8344f1f363
+
+Report final candidate ref explicitly.
+
+
+============================================================
+108. ARTIFACT INTEGRITY
+============================================================
+
+Before delivery verify:
+
+ZIP integrity
+bundle verify
+candidate checkout from bundle
+source ZIP ↔ Git-tree byte equality
+DELIVERY hashes
+
+Record all results.
+
+
+============================================================
+109. NO PUSH / NO MERGE
+============================================================
+
+Do not push or merge as part of implementation.
+
+Architecture Lead audits candidate first.
+
+Do not rewrite accepted baseline history.
+
+
+============================================================
+110. ACCEPTANCE CANDIDATE IDENTITY
+============================================================
+
+The final report must clearly separate:
+
+BASELINE:
+c486195f405856774102b8810c6c8b8344f1f363
+
+FINAL CANDIDATE:
+<NEW SHA>
+
+Do not use an uncommitted working tree as the review target.
+
+
+============================================================
+111. FINAL SCOPE AUDIT
+============================================================
+
+The report must explicitly answer:
+
+Network object-storage runtime added:
+YES / NO
+
+S3-compatible archive added:
+YES / NO
+
+Remote DELETE added:
+MUST BE NO
+
+Remote overwrite/upsert path added:
+MUST BE NO
+
+Private exchange APIs added:
+MUST BE NO
+
+Trading/execution added:
+MUST BE NO
+
+NATS/JetStream added:
+MUST BE NO
+
+Parquet added:
+MUST BE NO
+
+Book Service added:
+MUST BE NO
+
+Deribit added:
+MUST BE NO
+
+Brief #005 work added:
+MUST BE NO
+
+
+============================================================
+112. COMPLETION WORDING
+============================================================
+
+If all required local gates and real remote smoke pass:
+
+IMPLEMENTATION BRIEF #004 COMPLETE — AWAITING ARCHITECT REVIEW
+
+If local implementation is fully successful but the real remote archive smoke
+cannot be executed because external credentials/provider/environment are
+unavailable:
+
+BRIEF #004 LOCALLY COMPLETE — REMOTE ARCHIVE SMOKE EXTERNALLY BLOCKED
+
+If dependency/MSRV/architecture/capability requirements cannot be satisfied:
+
+BRIEF #004 BLOCKED — AWAITING ARCHITECT DECISION
+
+
+============================================================
+113. ABSOLUTE STOP
+============================================================
+
+Do not begin Brief #005.
+
+Do not implement normalization.
+
+Do not implement Book Service.
+
+Do not implement Parquet.
+
+Do not implement replay.
+
+Do not implement Deribit.
+
+Do not implement execution.
+
+The only objective is:
+
+SEALED LOCAL RAW
+→ IMMUTABLE CREATE-ONLY REMOTE ARCHIVE
+→ FULL BYTE VERIFICATION
+→ REMOTE DURABILITY RECEIPT
+
+BUILD
+→ VERIFY
+→ FIX
+→ REPEAT
+→ REPORT
