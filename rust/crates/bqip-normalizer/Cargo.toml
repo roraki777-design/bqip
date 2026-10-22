@@ -1,0 +1,27 @@
+[package]
+name = "bqip-normalizer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+bqip-contracts = { path = "../bqip-contracts" }
+bqip-capture-format = { path = "../bqip-capture-format" }
+# Reuse the accepted manifest validator; collector never depends on replay.
+bqip-binance-collector = { path = "../bqip-binance-collector" }
+prost.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+uuid.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[[bin]]
+name = "bqip-replay"
+path = "src/main.rs"
+
+[lints]
+workspace = true

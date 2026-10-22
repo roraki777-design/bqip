@@ -22,6 +22,11 @@ fn required(value: &Option<String>) -> Result<&str> {
 }
 
 impl MetadataCatalog {
+    /// Read-only catalog view for deterministic replay provenance; no history mutation.
+    pub fn versions(&self) -> &[InstrumentMetadataVersion] {
+        &self.versions
+    }
+
     pub fn new(versions: Vec<InstrumentMetadataVersion>) -> Result<Self> {
         let mut index = HashMap::new();
         for version in &versions {

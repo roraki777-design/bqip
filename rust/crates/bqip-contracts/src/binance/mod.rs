@@ -65,6 +65,18 @@ pub fn ms_to_ns(ms: u64) -> Result<i64> {
         .ok_or(ContractError("TIMESTAMP_OVERFLOW"))
 }
 
+/// Accepted #003 observation identity: original collector UUID, colon, capture sequence.
+pub fn metadata_observation_id(capture: &crate::proto::CaptureId) -> Result<String> {
+    capture.validate()?;
+    let id = uuid::Uuid::from_slice(capture.collector_instance_id.as_deref().unwrap_or_default())
+        .map_err(|_| ContractError("INVALID_OR_MISSING_UUID"))?;
+    Ok(format!(
+        "{}:{}",
+        id,
+        capture.capture_seq.unwrap_or_default()
+    ))
+}
+
 /// Replay never accepts a replacement session, capture ID or receive timestamp.
 pub fn replay_depth(
     raw: &crate::proto::RawCaptureEvent,

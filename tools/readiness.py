@@ -1,4 +1,4 @@
-"""Fail visibly when required Foundation and Brief 002–004 deliverables are absent."""
+"""Fail visibly when required Foundation and Brief 002–005 deliverables are absent."""
 
 from pathlib import Path
 
@@ -65,6 +65,19 @@ REQUIRED.extend([
     "rust/crates/bqip-raw-archive/examples/archive_benchmark.rs",
     "tests/fixtures/archive/vectors.json",
     "tools/run_archive_benchmark.py",
+])
+
+
+REQUIRED.extend([
+    "docs/briefs/Brief-005.txt",
+    "docs/replay/replay-v1.md",
+    "config/runtime/binance-btcusdt-normalizer-v1.json",
+    "rust/crates/bqip-normalizer/Cargo.toml",
+    "rust/crates/bqip-normalizer/src/main.rs",
+    "rust/crates/bqip-normalizer/tests/replay.rs",
+    "rust/crates/bqip-normalizer/examples/replay_workload.rs",
+    "tests/fixtures/replay/golden.json",
+    "tools/run_replay_benchmark.py",
 ])
 
 

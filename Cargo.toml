@@ -1,5 +1,5 @@
 [workspace]
-members = ["rust/crates/bqip-raw-archive", "rust/crates/bqip-contracts", "rust/crates/bqip-capture-format", "rust/crates/bqip-binance-collector"]
+members = ["rust/crates/bqip-normalizer", "rust/crates/bqip-raw-archive", "rust/crates/bqip-contracts", "rust/crates/bqip-capture-format", "rust/crates/bqip-binance-collector"]
 resolver = "2"
 
 [workspace.package]
